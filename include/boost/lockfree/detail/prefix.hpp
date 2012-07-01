@@ -45,4 +45,8 @@
 #endif
 #endif /* __GNUC__ */
 
+#ifndef BOOST_LOCKFREE_DCAS_ALIGNMENT
+#define /*BOOST_LOCKFREE_DCAS_ALIGNMENT*/
+#endif
+
 #endif /* BOOST_LOCKFREE_PREFIX_HPP_INCLUDED */
