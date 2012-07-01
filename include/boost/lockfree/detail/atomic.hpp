@@ -9,7 +9,10 @@
 
 #include <boost/config.hpp>
 
-#if __cplusplus < 201103L
+// at this time, neither gcc (4.7) not clang (3.2) completely implement atomic<>
+#define BOOST_LOCKFREE_NO_HDR_ATOMIC
+
+#if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 #include <boost/lockfree/detail/atomic/atomic.hpp>
 #else
 #include <atomic>
@@ -19,7 +22,7 @@ namespace boost {
 namespace lockfree {
 namespace detail {
 
-#if __cplusplus < 201103L
+#if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 using boost::lockfree_atomic::atomic;
 using boost::memory_order_acquire;
 using boost::memory_order_consume;
