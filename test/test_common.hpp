@@ -84,10 +84,10 @@ struct queue_stress_tester
         BOOST_REQUIRE(stk.empty());
 
         for (int i = 0; i != reader_threads; ++i)
-            reader.create_thread(boost::bind(&queue_stress_tester::get_items<queue>, this, boost::ref(stk)));
+            reader.create_thread(boost::bind(&queue_stress_tester::template get_items<queue>, this, boost::ref(stk)));
 
         for (int i = 0; i != writer_threads; ++i)
-            writer.create_thread(boost::bind(&queue_stress_tester::add_items<queue>, this, boost::ref(stk)));
+            writer.create_thread(boost::bind(&queue_stress_tester::template add_items<queue>, this, boost::ref(stk)));
 
         using namespace std;
         cout << "threads created" << endl;
