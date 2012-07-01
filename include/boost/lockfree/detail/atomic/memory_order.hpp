@@ -20,6 +20,8 @@
 
 namespace boost
 {
+namespace lockfree_atomic
+{
 
 //
 // Enum values are chosen so that code that needs to insert
@@ -48,6 +50,7 @@ enum memory_order
     memory_order_consume = 8
 };
 
+} // namespace lockfree_atomic
 } // namespace boost
 
 #endif // #ifndef BOOST_MEMORY_ORDER_HPP_INCLUDED

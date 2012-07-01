@@ -20,7 +20,7 @@ namespace lockfree {
 namespace detail {
 
 #if __cplusplus < 201103L
-using boost::atomic;
+using boost::lockfree_atomic::atomic;
 using boost::memory_order_acquire;
 using boost::memory_order_consume;
 using boost::memory_order_relaxed;

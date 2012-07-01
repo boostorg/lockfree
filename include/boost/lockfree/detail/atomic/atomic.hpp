@@ -15,6 +15,7 @@
 #include <boost/lockfree/detail/atomic/atomic/detail/integral-casts.hpp>
 
 namespace boost {
+namespace lockfree_atomic {
 
 template<typename T>
 class atomic : public detail::atomic::internal_atomic<T> {
@@ -199,6 +200,7 @@ static inline void atomic_thread_fence(memory_order order)
 	detail::atomic::platform_atomic_thread_fence<memory_order>(order);
 }
 
+}
 }
 
 #endif
