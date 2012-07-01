@@ -1,0 +1,37 @@
+# (C) Copyright 2010: Tim Blechmann
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+import testing ;
+
+lib boost_unit_test_framework ;
+lib boost_thread ;
+lib boost_system ;
+
+project
+    : source-location .
+    : requirements
+        <hardcode-dll-paths>true
+        <library>../../test/build//boost_test_exec_monitor
+    ;
+
+
+rule test_all
+{
+   local all_rules = ;
+
+   for local fileb in [ glob *.cpp ]
+   {
+      all_rules += [ run $(fileb)
+      :  # additional args
+      :  # test-files
+      : #
+      <library>../../thread/build//boost_thread/
+      <threading>multi # requirements
+      ] ;
+   }
+
+    return $(all_rules) ;
+}
+
+test-suite lockfree : [ test_all r ] : <threading>multi ;
