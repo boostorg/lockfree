@@ -6,9 +6,12 @@
 
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 
-#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MAIN
+#ifdef BOOST_LOCKFREE_INCLUDE_TESTS
 #include <boost/test/included/unit_test.hpp>
+#else
+#include <boost/test/unit_test.hpp>
+#endif
 
 BOOST_AUTO_TEST_CASE( tagged_ptr_test )
 {

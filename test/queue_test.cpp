@@ -5,12 +5,15 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/lockfree/queue.hpp>
+#include <boost/thread.hpp>
 
 #define BOOST_TEST_MAIN
+#ifdef BOOST_LOCKFREE_INCLUDE_TESTS
+#include <boost/test/included/unit_test.hpp>
+#else
 #include <boost/test/unit_test.hpp>
+#endif
 
-
-#include <boost/thread.hpp>
 #include <iostream>
 #include <memory>
 

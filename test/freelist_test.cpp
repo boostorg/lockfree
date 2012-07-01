@@ -7,18 +7,24 @@
 // enables error checks via dummy::~dtor
 #define BOOST_LOCKFREE_FREELIST_INIT_RUNS_DTOR
 
-#define BOOST_TEST_DYN_LINK
+#include <boost/lockfree/detail/freelist.hpp>
+#include <boost/lockfree/queue.hpp>
+
+#include <boost/foreach.hpp>
+#include <boost/thread.hpp>
+
 #define BOOST_TEST_MAIN
+#ifdef BOOST_LOCKFREE_INCLUDE_TESTS
 #include <boost/test/included/unit_test.hpp>
+#else
+#include <boost/test/unit_test.hpp>
+#endif
 
 #include <boost/foreach.hpp>
 
 #include <set>
 
 #include "test_helpers.hpp"
-
-#include <boost/lockfree/detail/freelist.hpp>
-#include <boost/lockfree/queue.hpp>
 
 using boost::lockfree::detail::atomic;
 
