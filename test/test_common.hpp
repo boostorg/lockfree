@@ -17,7 +17,7 @@ template <bool Bounded = false>
 struct queue_stress_tester
 {
     static const unsigned int buckets = 1<<13;
-    static const long node_count = 100000;
+    static const long node_count = 50000;
     const int reader_threads;
     const int writer_threads;
 

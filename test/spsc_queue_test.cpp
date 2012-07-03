@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_pop_test )
 }
 
 
-static const boost::uint32_t nodes_per_thread = 500000;
+static const boost::uint32_t nodes_per_thread = 100000;
 
 struct spsc_queue_tester
 {

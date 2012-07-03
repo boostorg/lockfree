@@ -35,15 +35,15 @@ struct dummy
     dummy(void)
     {
         if (test_running.load(boost::lockfree::detail::memory_order_relaxed))
-            assert(allocated == false);
-        allocated = true;
+            assert(allocated == 0);
+        allocated = 1;
     }
 
     ~dummy(void)
     {
         if (test_running.load(boost::lockfree::detail::memory_order_relaxed))
-            assert(allocated == true);
-        allocated = false;
+            assert(allocated == 1);
+        allocated = 0;
     }
 
     size_t padding[2]; // for used for the freelist node

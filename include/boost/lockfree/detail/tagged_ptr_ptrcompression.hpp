@@ -35,7 +35,7 @@ private:
     };
 
     static const int tag_index = 3;
-    static const compressed_ptr_t ptr_mask = 0xffffffffffff; //(1L<<48L)-1;
+    static const compressed_ptr_t ptr_mask = 0xffffffffffffUL; //(1L<<48L)-1;
 
     static T* extract_ptr(volatile compressed_ptr_t const & i)
     {
