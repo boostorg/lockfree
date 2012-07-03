@@ -83,7 +83,7 @@ enum {
     pointer_and_size,
     reference_to_array,
     iterator_pair,
-    output_iterator
+    output_iterator_
 };
 
 
@@ -221,7 +221,7 @@ void spsc_queue_buffer_pop(void)
             BOOST_REQUIRE_EQUAL(rb.pop(out), xqueue_size);
             break;
 
-        case output_iterator:
+        case output_iterator_:
             BOOST_REQUIRE_EQUAL(rb.pop(std::back_inserter(vout)), xqueue_size);
             break;
 
@@ -229,7 +229,7 @@ void spsc_queue_buffer_pop(void)
             assert(false);
         }
 
-        if (EnqueueMode == output_iterator) {
+        if (EnqueueMode == output_iterator_) {
             BOOST_REQUIRE_EQUAL(vout.size(), xqueue_size);
             for (size_t i = 0; i != xqueue_size; ++i)
                 BOOST_REQUIRE_EQUAL(data[i], vout[i]);
