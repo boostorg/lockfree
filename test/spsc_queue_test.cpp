@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_pop_test )
 {
     spsc_queue_buffer_pop<pointer_and_size, 7, 16, 64>();
     spsc_queue_buffer_pop<reference_to_array, 7, 16, 64>();
-    spsc_queue_buffer_pop<output_iterator, 7, 16, 64>();
+    spsc_queue_buffer_pop<output_iterator_, 7, 16, 64>();
 }
 
 
