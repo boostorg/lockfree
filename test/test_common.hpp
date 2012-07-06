@@ -66,7 +66,7 @@ struct queue_stress_tester
                 assert(inserted);
                 ++pop_count;
             } else
-                if (not running.load())
+                if (!running.load())
                     return;
         }
     }
