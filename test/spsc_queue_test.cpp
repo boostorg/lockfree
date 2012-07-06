@@ -302,7 +302,7 @@ struct spsc_queue_tester
         for(;;)
         {
             bool success = get_element();
-            if (not running and not success)
+            if (!running && !success)
                 return;
         }
     }
@@ -406,7 +406,7 @@ struct spsc_queue_tester_buffering
         for(;;)
         {
             bool success = get_elements();
-            if (not running and not success)
+            if (!running && !success)
                 return;
         }
     }
