@@ -396,7 +396,6 @@ public:
         initialize();
     }
 
-    template <typename Allocator>
     fixed_size_freelist (void):
         pool_(tagged_index(NodeStorage::node_count(), 0))
     {
