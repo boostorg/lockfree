@@ -42,12 +42,13 @@ public:
     /** unsafe set operation */
     /* @{ */
 #ifdef BOOST_NO_DEFAULTED_FUNCTIONS
-    void operator= (tagged_ptr const & p)
+    tagged_ptr & operator= (tagged_ptr const & p)
     {
         set(p.ptr, p.tag);
+        return *this;
     }
 #else
-    void operator= (tagged_ptr const & p) = default;
+    tagged_ptr & operator= (tagged_ptr const & p) = default;
 #endif
 
     void set(T * p, tag_t t)

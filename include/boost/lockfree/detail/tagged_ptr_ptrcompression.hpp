@@ -78,9 +78,10 @@ public:
     /** unsafe set operation */
     /* @{ */
 #ifdef BOOST_NO_DEFAULTED_FUNCTIONS
-    void operator= (tagged_ptr const & p)
+    tagged_ptr & operator= (tagged_ptr const & p)
     {
          ptr = p.ptr;
+         return *this;
     }
 #else
     tagged_ptr & operator= (tagged_ptr const & p) = default;
