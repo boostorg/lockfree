@@ -368,7 +368,7 @@ struct spsc_queue_tester_buffering
             do
             {
                 pushed += sf.push(input_buffer.c_array() + pushed,
-                                       input_buffer.size()    - pushed);
+                                  input_buffer.size()    - pushed);
             }
             while (pushed != buf_size);
 
@@ -382,20 +382,17 @@ struct spsc_queue_tester_buffering
 
         size_t popd = sf.pop(output_buffer.c_array(), output_buffer.size());
 
-        if (popd)
-        {
+        if (popd) {
             received_nodes += popd;
             spsc_queue_cnt -= popd;
 
-            for (size_t i = 0; i != popd; ++i)
-            {
+            for (size_t i = 0; i != popd; ++i) {
                 bool erased = working_set.erase(output_buffer[i]);
                 assert(erased);
             }
 
             return true;
-        }
-        else
+        } else
             return false;
     }
 
@@ -403,8 +400,7 @@ struct spsc_queue_tester_buffering
 
     void get(void)
     {
-        for(;;)
-        {
+        for(;;) {
             bool success = get_elements();
             if (!running && !success)
                 return;
@@ -432,8 +428,9 @@ struct spsc_queue_tester_buffering
     }
 };
 
+spsc_queue_tester_buffering test1;
+
 BOOST_AUTO_TEST_CASE( spsc_queue_test_buffering )
 {
-    spsc_queue_tester_buffering test1;
     test1.run();
 }

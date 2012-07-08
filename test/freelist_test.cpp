@@ -198,23 +198,29 @@ struct freelist_tester
     }
 };
 
+template <typename Tester>
+void run_tester()
+{
+    boost::scoped_ptr<Tester> tester (new Tester);
+    tester->run();
+}
 
 
 BOOST_AUTO_TEST_CASE( unbounded_freelist_test )
 {
-    freelist_tester<boost::lockfree::detail::freelist_stack<dummy>, false > tester;
-    tester.run();
+    typedef freelist_tester<boost::lockfree::detail::freelist_stack<dummy>, false > test_type;
+    run_tester<test_type>();
 }
 
 
 BOOST_AUTO_TEST_CASE( bounded_freelist_test )
 {
-    freelist_tester<boost::lockfree::detail::freelist_stack<dummy>, true > tester;
-    tester.run();
+    typedef freelist_tester<boost::lockfree::detail::freelist_stack<dummy>, true > test_type;
+    run_tester<test_type>();
 }
 
 BOOST_AUTO_TEST_CASE( fixed_size_freelist_test )
 {
-    freelist_tester<boost::lockfree::detail::fixed_size_freelist<dummy>, true > tester;
-    tester.run();
+    typedef freelist_tester<boost::lockfree::detail::fixed_size_freelist<dummy>, true > test_type;
+    run_tester<test_type>();
 }
