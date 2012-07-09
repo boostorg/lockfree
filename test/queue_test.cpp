@@ -129,21 +129,27 @@ BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
 
 BOOST_AUTO_TEST_CASE( queue_test_bounded )
 {
-    queue_stress_tester<true> tester(4, 4);
-    boost::lockfree::queue<long> stk(128);
-    tester.run(stk);
+    typedef queue_stress_tester<true> tester_type;
+    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
+
+    boost::lockfree::queue<long> q(128);
+    tester->run(q);
 }
 
 BOOST_AUTO_TEST_CASE( queue_test_unbounded )
 {
-    queue_stress_tester<false> tester(4, 4);
-    boost::lockfree::queue<long> stk(128);
-    tester.run(stk);
+    typedef queue_stress_tester<false> tester_type;
+    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
+
+    boost::lockfree::queue<long> q(128);
+    tester->run(q);
 }
 
 BOOST_AUTO_TEST_CASE( queue_test_fixed_size )
 {
-    queue_stress_tester<> tester(4, 4);
-    boost::lockfree::queue<long, boost::lockfree::capacity<8> > stk;
-    tester.run(stk);
+    typedef queue_stress_tester<> tester_type;
+    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
+
+    boost::lockfree::queue<long, boost::lockfree::capacity<8> > q;
+    tester->run(q);
 }
