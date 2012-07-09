@@ -13,7 +13,7 @@
 #define BOOST_LOCKFREE_NO_HDR_ATOMIC
 
 #if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
-#include <boost/lockfree/detail/atomic/atomic.hpp>
+#include <boost/atomic.hpp>
 #else
 #include <atomic>
 #endif
@@ -23,7 +23,7 @@ namespace lockfree {
 namespace detail {
 
 #if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
-using boost::lockfree_atomic::atomic;
+using boost::atomic;
 using boost::memory_order_acquire;
 using boost::memory_order_consume;
 using boost::memory_order_relaxed;

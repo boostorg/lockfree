@@ -4,19 +4,15 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#if __cplusplus < 201103L
-int main(){}
-#else
-
 //[spsc_queue_example
 #include <boost/thread/thread.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
 #include <iostream>
 
-#include <atomic> // example requires c++11
+#include <boost/atomic.hpp>
 
 int producer_count = 0;
-std::atomic_int consumer_count (0);
+boost::atomic_int consumer_count (0);
 
 boost::lockfree::spsc_queue<int, boost::lockfree::capacity<1024> > spsc_queue;
 
@@ -31,7 +27,7 @@ void producer(void)
     }
 }
 
-std::atomic<bool> done (false);
+boost::atomic<bool> done (false);
 
 void consumer(void)
 {
@@ -56,7 +52,6 @@ int main(int argc, char* argv[])
     boost::thread producer_thread(producer);
     boost::thread consumer_thread(consumer);
 
-
     producer_thread.join();
     done = true;
     consumer_thread.join();
@@ -65,4 +60,3 @@ int main(int argc, char* argv[])
     cout << "consumed " << consumer_count << " objects." << endl;
 }
 //]
-#endif

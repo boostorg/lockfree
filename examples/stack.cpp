@@ -4,19 +4,15 @@
 //  accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#if __cplusplus < 201103L
-int main(){}
-#else
-
 //[stack_example
 #include <boost/thread/thread.hpp>
 #include <boost/lockfree/stack.hpp>
 #include <iostream>
 
-#include <atomic> // example requires c++11
+#include <boost/atomic.hpp>
 
-std::atomic_int producer_count(0);
-std::atomic_int consumer_count(0);
+boost::atomic_int producer_count(0);
+boost::atomic_int consumer_count(0);
 
 boost::lockfree::stack<int> stack(128);
 
@@ -33,7 +29,7 @@ void producer(void)
     }
 }
 
-std::atomic<bool> done (false);
+boost::atomic<bool> done (false);
 
 void consumer(void)
 {
@@ -72,5 +68,3 @@ int main(int argc, char* argv[])
     cout << "consumed " << consumer_count << " objects." << endl;
 }
 //]
-
-#endif
