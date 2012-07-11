@@ -5,6 +5,7 @@
 project boost/lockfree/example
     : requirements
         <library>../../thread/build//boost_thread/
+        <library>../../atomic/build//boost_atomic
     ;
 
 exe queue : queue.cpp ;

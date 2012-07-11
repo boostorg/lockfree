@@ -13,6 +13,7 @@ project
     : requirements
         <hardcode-dll-paths>true
         <library>../../test/build//boost_test_exec_monitor
+        <library>../../atomic/build//boost_atomic
     ;
 
 
