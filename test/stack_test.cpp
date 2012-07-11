@@ -6,7 +6,6 @@
 
 
 #include <boost/thread.hpp>
-#include <iostream>
 #include <boost/lockfree/stack.hpp>
 
 #define BOOST_TEST_MAIN
@@ -15,14 +14,6 @@
 #else
 #include <boost/test/unit_test.hpp>
 #endif
-
-
-#include "test_helpers.hpp"
-
-#include <cstdio>
-
-#include "test_common.hpp"
-
 
 BOOST_AUTO_TEST_CASE( simple_stack_test )
 {
@@ -115,31 +106,4 @@ BOOST_AUTO_TEST_CASE( bounded_stack_test_exhausted )
     BOOST_REQUIRE(stk.pop(out)); BOOST_REQUIRE_EQUAL(out, 1);
     BOOST_REQUIRE(!stk.pop(out));
     BOOST_REQUIRE(stk.empty());
-}
-
-
-BOOST_AUTO_TEST_CASE( stack_test_bounded )
-{
-    typedef queue_stress_tester<true> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-    boost::lockfree::stack<long> stk(128);
-    tester->run(stk);
-}
-
-BOOST_AUTO_TEST_CASE( stack_test_unbounded )
-{
-    typedef queue_stress_tester<false> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-
-    boost::lockfree::stack<long> stk(128);
-    tester->run(stk);
-}
-
-BOOST_AUTO_TEST_CASE( stack_test_fixed_size )
-{
-    typedef queue_stress_tester<> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-
-    boost::lockfree::stack<long, boost::lockfree::capacity<8> > stk;
-    tester->run(stk);
 }

@@ -14,10 +14,7 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
-#include <iostream>
 #include <memory>
-
-#include "test_common.hpp"
 
 using namespace boost;
 using namespace boost::lockfree;
@@ -125,31 +122,4 @@ BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
 
 
     BOOST_REQUIRE(f.empty());
-}
-
-BOOST_AUTO_TEST_CASE( queue_test_bounded )
-{
-    typedef queue_stress_tester<true> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-
-    boost::lockfree::queue<long> q(128);
-    tester->run(q);
-}
-
-BOOST_AUTO_TEST_CASE( queue_test_unbounded )
-{
-    typedef queue_stress_tester<false> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-
-    boost::lockfree::queue<long> q(128);
-    tester->run(q);
-}
-
-BOOST_AUTO_TEST_CASE( queue_test_fixed_size )
-{
-    typedef queue_stress_tester<> tester_type;
-    boost::scoped_ptr<tester_type> tester(new tester_type(4, 4) );
-
-    boost::lockfree::queue<long, boost::lockfree::capacity<8> > q;
-    tester->run(q);
 }
