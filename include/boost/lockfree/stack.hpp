@@ -129,7 +129,7 @@ public:
     //! Construct stack
     // @{
     stack(void):
-        pool(node_allocator(), has_capacity ? capacity : 0)
+        pool(node_allocator(), capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();
@@ -137,14 +137,14 @@ public:
 
     template <typename U>
     explicit stack(typename node_allocator::template rebind<U>::other const & alloc):
-        pool(alloc, has_capacity ? capacity : 0)
+        pool(alloc, capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();
     }
 
     explicit stack(allocator const & alloc):
-        pool(alloc, has_capacity ? capacity : 0)
+        pool(alloc, capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();

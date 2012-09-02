@@ -150,7 +150,7 @@ public:
     queue(void):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
-        pool(node_allocator(), has_capacity ? capacity : 0)
+        pool(node_allocator(), capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();
@@ -160,7 +160,7 @@ public:
     explicit queue(typename node_allocator::template rebind<U>::other const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
-        pool(alloc, has_capacity ? capacity : 0)
+        pool(alloc, capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();
@@ -169,7 +169,7 @@ public:
     explicit queue(allocator const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
-        pool(alloc, has_capacity ? capacity : 0)
+        pool(alloc, capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
         initialize();
