@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include <boost/array.hpp>
+#include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/static_assert.hpp>
 
@@ -496,7 +497,7 @@ public:
     // @{
     spsc_queue(void)
     {
-        BOOST_STATIC_ASSERT(!runtime_sized);
+        BOOST_ASSERT(!runtime_sized);
     }
 
     template <typename U>
@@ -509,7 +510,7 @@ public:
     explicit spsc_queue(allocator const & alloc)
     {
         // just for API compatibility: we don't actually need an allocator
-        BOOST_STATIC_ASSERT(!runtime_sized);
+        BOOST_ASSERT(!runtime_sized);
     }
     // @}
 
@@ -522,7 +523,7 @@ public:
     explicit spsc_queue(size_type element_count):
         base_type(element_count)
     {
-        BOOST_STATIC_ASSERT(runtime_sized);
+        BOOST_ASSERT(runtime_sized);
     }
 
     template <typename U>
@@ -535,7 +536,7 @@ public:
     spsc_queue(size_type element_count, allocator_arg const & alloc):
         base_type(alloc, element_count)
     {
-        BOOST_STATIC_ASSERT(runtime_sized);
+        BOOST_ASSERT(runtime_sized);
     }
     // @}
 

@@ -7,6 +7,7 @@
 #ifndef BOOST_LOCKFREE_STACK_HPP_INCLUDED
 #define BOOST_LOCKFREE_STACK_HPP_INCLUDED
 
+#include <boost/assert.hpp>
 #include <boost/checked_delete.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/noncopyable.hpp>
@@ -131,7 +132,7 @@ public:
     stack(void):
         pool(node_allocator(), capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
 
@@ -146,7 +147,7 @@ public:
     explicit stack(allocator const & alloc):
         pool(alloc, capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
     // @}
@@ -156,7 +157,7 @@ public:
     explicit stack(size_type n):
         pool(node_allocator(), n)
     {
-        BOOST_STATIC_ASSERT(!has_capacity);
+        BOOST_ASSERT(!has_capacity);
         initialize();
     }
 

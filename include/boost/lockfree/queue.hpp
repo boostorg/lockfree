@@ -13,6 +13,7 @@
 
 #include <memory>               /* std::auto_ptr */
 
+#include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
@@ -152,7 +153,7 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
 
@@ -171,7 +172,7 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
     // @}
@@ -183,7 +184,7 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), n + 1)
     {
-        BOOST_STATIC_ASSERT(!has_capacity);
+        BOOST_ASSERT(!has_capacity);
         initialize();
     }
 
