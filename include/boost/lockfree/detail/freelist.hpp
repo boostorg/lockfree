@@ -381,7 +381,7 @@ class fixed_size_freelist:
 #ifdef BOOST_LOCKFREE_FREELIST_INIT_RUNS_DTOR
             destruct<false>(nodes + i);
 #else
-            deallocate<false>(i);
+            deallocate<false>(static_cast<index_t>(i));
 #endif
         }
     }
@@ -391,7 +391,8 @@ public:
 
     template <typename Allocator>
     fixed_size_freelist (Allocator const & alloc, std::size_t count):
-        NodeStorage(alloc, count), pool_(tagged_index(count, 0))
+        NodeStorage(alloc, count),
+        pool_(tagged_index(static_cast<index_t>(count), 0))
     {
         initialize();
     }
@@ -461,7 +462,7 @@ public:
 
     index_t null_handle(void) const
     {
-        return NodeStorage::node_count();
+        return static_cast<index_t>(NodeStorage::node_count());
     }
 
     index_t get_handle(T * pointer) const
@@ -469,7 +470,7 @@ public:
         if (pointer == NULL)
             return null_handle();
         else
-            return pointer - NodeStorage::nodes();
+            return static_cast<index_t>(pointer - NodeStorage::nodes());
     }
 
     index_t get_handle(tagged_node_handle const & handle) const
