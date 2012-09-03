@@ -148,7 +148,7 @@ public:
         return NULL;
     }
 
-private:
+protected: // allow use from subclasses
     template <bool ThreadSafe, bool Bounded>
     T * allocate (void)
     {
@@ -158,6 +158,7 @@ private:
             return allocate_impl_unsafe<Bounded>();
     }
 
+private:
     template <bool Bounded>
     T * allocate_impl (void)
     {
@@ -496,7 +497,7 @@ public:
         return ptr;
     }
 
-private:
+protected: // allow use from subclasses
     template <bool ThreadSafe>
     index_t allocate (void)
     {
@@ -506,6 +507,7 @@ private:
             return allocate_impl_unsafe();
     }
 
+private:
     index_t allocate_impl (void)
     {
         tagged_index old_pool = pool_.load(memory_order_consume);
