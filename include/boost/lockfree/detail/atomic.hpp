@@ -10,9 +10,12 @@
 #include <boost/config.hpp>
 
 // at this time, neither gcc (4.7) not clang (3.2) completely implement atomic<>
+// MSVC has it from version 2012 onwards.
+#if !defined(_MSC_VER) || _MSC_VER < 1700
 #define BOOST_LOCKFREE_NO_HDR_ATOMIC
+#endif
 
-#if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
+#if defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 #include <boost/atomic.hpp>
 #else
 #include <atomic>
@@ -22,7 +25,7 @@ namespace boost {
 namespace lockfree {
 namespace detail {
 
-#if (__cplusplus < 201103L) || defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
+#if defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 using boost::atomic;
 using boost::memory_order_acquire;
 using boost::memory_order_consume;
