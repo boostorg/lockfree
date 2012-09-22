@@ -70,9 +70,9 @@ public:
             return false;
     }
 
-    int count_nodes(void) const
+    std::size_t count_nodes(void) const
     {
-        int ret = 0;
+        std::size_t ret = 0;
         for (int i = 0; i != buckets; ++i) {
             boost::mutex::scoped_lock lock (ref_mutex[i]);
             ret += data[i].size();
