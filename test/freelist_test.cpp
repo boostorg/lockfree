@@ -127,7 +127,11 @@ struct freelist_tester
 {
     static const int size = 128;
     static const int thread_count = 4;
+#ifndef BOOST_LOCKFREE_STRESS_TEST
+    static const int operations_per_thread = 1000;
+#else
     static const int operations_per_thread = 100000;
+#endif
 
     freelist_type fl;
     boost::lockfree::queue<dummy*> allocated_nodes;
