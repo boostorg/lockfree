@@ -488,7 +488,7 @@ public:
      * \return true, if stack is empty.
      *
      * \note It only guarantees that at some point during the execution of the function the stack has been empty.
-     *       It is rarely practical to use this value in program logic, because the the stack can be modified by other threads.
+     *       It is rarely practical to use this value in program logic, because the stack can be modified by other threads.
      * */
     bool empty(void) const
     {

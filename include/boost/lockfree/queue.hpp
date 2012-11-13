@@ -1,4 +1,4 @@
-//  lock-free queue queue from
+//  lock-free queue from
 //  Michael, M. M. and Scott, M. L.,
 //  "simple, fast and practical non-blocking and blocking concurrent queue algorithms"
 //
