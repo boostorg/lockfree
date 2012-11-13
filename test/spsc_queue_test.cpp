@@ -15,18 +15,15 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
-
-
 #include <iostream>
 #include <memory>
 
-
 #include "test_helpers.hpp"
+#include "test_common.hpp"
 
 using namespace boost;
 using namespace boost::lockfree;
 using namespace std;
-
 
 BOOST_AUTO_TEST_CASE( simple_spsc_queue_test )
 {
@@ -248,7 +245,11 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_pop_test )
 }
 
 
+#ifndef BOOST_LOCKFREE_STRESS_TEST
 static const boost::uint32_t nodes_per_thread = 100000;
+#else
+static const boost::uint32_t nodes_per_thread = 100000000;
+#endif
 
 struct spsc_queue_tester
 {
@@ -264,10 +265,9 @@ struct spsc_queue_tester
 
     void add(void)
     {
-        for (boost::uint32_t i = 0; i != nodes_per_thread; ++i)
-        {
-            int id = generate_id<int>();
+        for (boost::uint32_t i = 0; i != nodes_per_thread; ++i) {
 
+            int id = generate_id<int>();
             working_set.insert(id);
 
             while (sf.push(id) == false)
@@ -283,15 +283,13 @@ struct spsc_queue_tester
 
         bool success = sf.pop(data);
 
-        if (success)
-        {
+        if (success) {
             ++received_nodes;
             --spsc_queue_cnt;
             bool erased = working_set.erase(data);
             assert(erased);
             return true;
-        }
-        else
+        } else
             return false;
     }
 
@@ -299,8 +297,7 @@ struct spsc_queue_tester
 
     void get(void)
     {
-        for(;;)
-        {
+        for(;;) {
             bool success = get_element();
             if (!running && !success)
                 return;
@@ -332,8 +329,8 @@ struct spsc_queue_tester
 
 BOOST_AUTO_TEST_CASE( spsc_queue_test_caching )
 {
-//     spsc_queue_tester test1;
-    //test1.run();
+    spsc_queue_tester test1;
+    test1.run();
 }
 
 struct spsc_queue_tester_buffering
@@ -354,10 +351,8 @@ struct spsc_queue_tester_buffering
     void add(void)
     {
         boost::array<int, buf_size> input_buffer;
-        for (boost::uint32_t i = 0; i != nodes_per_thread; i+=buf_size)
-        {
-            for (size_t i = 0; i != buf_size; ++i)
-            {
+        for (boost::uint32_t i = 0; i != nodes_per_thread; i+=buf_size) {
+            for (size_t i = 0; i != buf_size; ++i) {
                 int id = generate_id<int>();
                 working_set.insert(id);
                 input_buffer[i] = id;
@@ -365,12 +360,10 @@ struct spsc_queue_tester_buffering
 
             size_t pushed = 0;
 
-            do
-            {
+            do {
                 pushed += sf.push(input_buffer.c_array() + pushed,
                                   input_buffer.size()    - pushed);
-            }
-            while (pushed != buf_size);
+            } while (pushed != buf_size);
 
             spsc_queue_cnt+=buf_size;
         }

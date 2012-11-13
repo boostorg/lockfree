@@ -28,8 +28,8 @@ class static_hashed_set
 public:
     int calc_index(int_type id)
     {
-		// knuth hash ... does not need to be good, but has to be portable
-		size_t factor = size_t((float)buckets * 1.616f);
+        // knuth hash ... does not need to be good, but has to be portable
+        size_t factor = size_t((float)buckets * 1.616f);
 
         return ((size_t)id * factor) % buckets;
     }
