@@ -65,7 +65,7 @@ public:
     {}
 
     /** copy constructor */
-#ifdef BOOST_NO_DEFAULTED_FUNCTIONS
+#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
     tagged_ptr(tagged_ptr const & p):
         ptr(p.ptr)
     {}
@@ -79,7 +79,7 @@ public:
 
     /** unsafe set operation */
     /* @{ */
-#ifdef BOOST_NO_DEFAULTED_FUNCTIONS
+#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
     tagged_ptr & operator= (tagged_ptr const & p)
     {
          ptr = p.ptr;

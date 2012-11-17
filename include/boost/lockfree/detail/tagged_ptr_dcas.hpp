@@ -27,7 +27,7 @@ public:
     tagged_ptr(void) BOOST_NOEXCEPT//: ptr(0), tag(0)
     {}
 
-#ifdef BOOST_NO_DEFAULTED_FUNCTIONS
+#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
     tagged_ptr(tagged_ptr const & p):
         ptr(p.ptr), tag(p.tag)
     {}
@@ -41,7 +41,7 @@ public:
 
     /** unsafe set operation */
     /* @{ */
-#ifdef BOOST_NO_DEFAULTED_FUNCTIONS
+#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
     tagged_ptr & operator= (tagged_ptr const & p)
     {
         set(p.ptr, p.tag);

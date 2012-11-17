@@ -255,7 +255,7 @@ public:
     {}
 
     /** copy constructor */
-#ifdef BOOST_NO_DEFAULTED_FUNCTIONS
+#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
     tagged_index(tagged_index const & rhs):
         index(rhs.index), tag(rhs.tag)
     {}
