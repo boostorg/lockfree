@@ -255,7 +255,7 @@ struct spsc_queue_tester
 {
     spsc_queue<int, capacity<128> > sf;
 
-    atomic<long> spsc_queue_cnt, received_nodes;
+    boost::lockfree::detail::atomic<long> spsc_queue_cnt, received_nodes;
 
     static_hashed_set<int, 1<<16 > working_set;
 
@@ -329,18 +329,18 @@ struct spsc_queue_tester
 
 BOOST_AUTO_TEST_CASE( spsc_queue_test_caching )
 {
-    spsc_queue_tester test1;
-    test1.run();
+    boost::shared_ptr<spsc_queue_tester> test1(new spsc_queue_tester);
+    test1->run();
 }
 
 struct spsc_queue_tester_buffering
 {
     spsc_queue<int, capacity<128> > sf;
 
-    atomic<long> spsc_queue_cnt;
+    boost::lockfree::detail::atomic<long> spsc_queue_cnt;
 
     static_hashed_set<int, 1<<16 > working_set;
-    atomic<long> received_nodes;
+    boost::lockfree::detail::atomic<long> received_nodes;
 
     spsc_queue_tester_buffering(void):
         spsc_queue_cnt(0), received_nodes(0)
@@ -421,9 +421,9 @@ struct spsc_queue_tester_buffering
     }
 };
 
-spsc_queue_tester_buffering test1;
 
 BOOST_AUTO_TEST_CASE( spsc_queue_test_buffering )
 {
-    test1.run();
+    boost::shared_ptr<spsc_queue_tester_buffering> test1(new spsc_queue_tester_buffering);
+    test1->run();
 }
