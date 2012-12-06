@@ -111,7 +111,7 @@ struct queue_stress_tester
 
         cout << "reader threads joined" << endl;
 
-        BOOST_REQUIRE_EQUAL(data.count_nodes(), 0);
+        BOOST_REQUIRE_EQUAL(data.count_nodes(), (size_t)0);
         BOOST_REQUIRE(stk.empty());
 
         BOOST_REQUIRE_EQUAL(push_count, pop_count);
