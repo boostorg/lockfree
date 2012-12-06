@@ -266,7 +266,6 @@ struct spsc_queue_tester
     void add(void)
     {
         for (boost::uint32_t i = 0; i != nodes_per_thread; ++i) {
-
             int id = generate_id<int>();
             working_set.insert(id);
 
@@ -280,7 +279,6 @@ struct spsc_queue_tester
     bool get_element(void)
     {
         int data;
-
         bool success = sf.pop(data);
 
         if (success) {
@@ -293,7 +291,7 @@ struct spsc_queue_tester
             return false;
     }
 
-    atomic<bool> running;
+    boost::lockfree::detail::atomic<bool> running;
 
     void get(void)
     {
@@ -389,7 +387,7 @@ struct spsc_queue_tester_buffering
             return false;
     }
 
-    atomic<bool> running;
+    boost::lockfree::detail::atomic<bool> running;
 
     void get(void)
     {

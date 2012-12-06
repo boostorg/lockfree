@@ -60,7 +60,7 @@ struct queue_stress_tester
         }
     }
 
-    atomic<bool> running;
+    boost::lockfree::detail::atomic<bool> running;
 
     template <typename queue>
     void get_items(queue & stk)
