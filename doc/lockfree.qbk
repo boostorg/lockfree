@@ -150,7 +150,7 @@ The data structures can be configured with [@boost:/libs/parameter/doc/html/inde
     ]
 
     [[[classref boost::lockfree::allocator]]
-     [Defines the allocator. _lockfree_ supports stateful allocator and is compatible with [@boost:/libs/interprocess/doc/html/index.html Boost.Interprocess] allocators.]
+     [Defines the allocator. _lockfree_ supports stateful allocator and is compatible with [@boost:/libs/interprocess/index.html Boost.Interprocess] allocators.]
     ]
 ]
 
@@ -257,7 +257,7 @@ are sufficient. However this is only possible for fixed-sized data structures, t
 
 [section Interprocess Support]
 
-The _lockfree_ data structures have basic support for [@boost:/libs/interprocess/doc/html/index.html Boost.Interprocess]. The only
+The _lockfree_ data structures have basic support for [@boost:/libs/interprocess/index.html Boost.Interprocess]. The only
 problem is the blocking emulation of lock-free atomics, which in the current implementation is not guaranteed to be interprocess-safe.
 
 [endsect]
