@@ -75,7 +75,7 @@ lock-free property.
 
 When discussing the performance of non-blocking data structures, one has to distinguish between *amortized* and
 *worst-case* costs. The definition of 'lock-free' and 'wait-free' only mention the upper bound of an operation. Therefore
-lock-free data structures are not necesarily the best choice for every use case. In order to maximise the throughput of an
+lock-free data structures are not necessarily the best choice for every use case. In order to maximise the throughput of an
 application one should consider high-performance concurrent data structures [footnote
 [@http://threadingbuildingblocks.org/ Intel's Thread Building Blocks library] provides many efficient concurrent data structures,
 which are not necessarily lock-free.].
@@ -161,7 +161,7 @@ The data structures can be configured with [@boost:/libs/parameter/doc/html/inde
 
 [h2 Queue]
 
-The [classref boost::lockfree::queue boost::lockfree::queue] class implements a multi-writer/multi-reader queue queue. The
+The [classref boost::lockfree::queue boost::lockfree::queue] class implements a multi-writer/multi-reader queue. The
 following example shows how integer values are produced and consumed by 4 threads each:
 
 [import ../examples/queue.cpp]
