@@ -274,6 +274,7 @@ struct spsc_queue_tester
 
             ++spsc_queue_cnt;
         }
+        running = false;
     }
 
     bool get_element(void)
@@ -315,7 +316,6 @@ struct spsc_queue_tester
         writer.join();
         cout << "writer threads joined. waiting for readers to finish" << endl;
 
-        running = false;
         reader.join();
 
         BOOST_REQUIRE_EQUAL(received_nodes, nodes_per_thread);
@@ -365,6 +365,7 @@ struct spsc_queue_tester_buffering
 
             spsc_queue_cnt+=buf_size;
         }
+        running = false;
     }
 
     bool get_elements(void)
@@ -409,7 +410,6 @@ struct spsc_queue_tester_buffering
         writer.join();
         cout << "writer threads joined. waiting for readers to finish" << endl;
 
-        running = false;
         reader.join();
 
         BOOST_REQUIRE_EQUAL(received_nodes, nodes_per_thread);
