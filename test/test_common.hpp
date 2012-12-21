@@ -10,14 +10,11 @@
 #include <boost/array.hpp>
 #include <boost/thread.hpp>
 
-namespace impl
-{
+namespace impl {
 
 using boost::array;
 using namespace boost;
 using namespace std;
-
-using boost::lockfree::detail::atomic;
 
 template <bool Bounded = false>
 struct queue_stress_tester
@@ -30,6 +27,8 @@ struct queue_stress_tester
 #endif
     const int reader_threads;
     const int writer_threads;
+
+    boost::lockfree::detail::atomic<int> writers_finished;
 
     static_hashed_set<long, buckets> data;
     static_hashed_set<long, buckets> dequeued;
@@ -58,6 +57,7 @@ struct queue_stress_tester
                     /*thread::yield()*/;
             ++push_count;
         }
+        writers_finished += 1;
     }
 
     boost::lockfree::detail::atomic<bool> running;
@@ -76,7 +76,7 @@ struct queue_stress_tester
                 assert(inserted);
                 ++pop_count;
             } else
-                if (!running.load())
+                if ( writers_finished.load() == writer_threads )
                     return;
         }
     }
@@ -85,8 +85,7 @@ struct queue_stress_tester
     void run(queue & stk)
     {
         BOOST_WARN(stk.is_lock_free());
-
-        running.store(true);
+        writers_finished.store(0);
 
         thread_group writer;
         thread_group reader;
@@ -106,7 +105,6 @@ struct queue_stress_tester
 
         cout << "writer threads joined, waiting for readers" << endl;
 
-        running = false;
         reader.join_all();
 
         cout << "reader threads joined" << endl;
