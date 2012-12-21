@@ -10,14 +10,11 @@
 #include <boost/array.hpp>
 #include <boost/thread.hpp>
 
-namespace impl
-{
+namespace impl {
 
 using boost::array;
 using namespace boost;
 using namespace std;
-
-using boost::lockfree::detail::atomic;
 
 template <bool Bounded = false>
 struct queue_stress_tester
@@ -31,7 +28,7 @@ struct queue_stress_tester
     const int reader_threads;
     const int writer_threads;
 
-    atomic_int writers_finished;
+    boost::lockfree::detail::atomic<int> writers_finished;
 
     static_hashed_set<long, buckets> data;
     static_hashed_set<long, buckets> dequeued;
