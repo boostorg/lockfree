@@ -299,8 +299,10 @@ struct spsc_queue_tester
         for(;;) {
             bool success = get_element();
             if (!running && !success)
-                return;
+                break;
         }
+
+        while ( get_element() );
     }
 
     void run(void)

@@ -63,22 +63,35 @@ struct queue_stress_tester
     boost::lockfree::detail::atomic<bool> running;
 
     template <typename queue>
-    void get_items(queue & stk)
+    bool consume_element(queue & q)
+    {
+        long id;
+        bool ret = q.pop(id);
+
+        if (!ret)
+            return false;
+
+        bool erased = data.erase(id);
+        bool inserted = dequeued.insert(id);
+        assert(erased);
+        assert(inserted);
+        ++pop_count;
+        return true;
+    }
+
+    template <typename queue>
+    void get_items(queue & q)
     {
         for (;;) {
-            long id;
+            bool received_element = consume_element(q);
+            if (received_element)
+                continue;
 
-            bool got = stk.pop(id);
-            if (got) {
-                bool erased = data.erase(id);
-                bool inserted = dequeued.insert(id);
-                assert(erased);
-                assert(inserted);
-                ++pop_count;
-            } else
-                if ( writers_finished.load() == writer_threads )
-                    return;
+            if ( writers_finished.load() == writer_threads )
+                break;
         }
+
+        while (consume_element(q));
     }
 
     template <typename queue>
