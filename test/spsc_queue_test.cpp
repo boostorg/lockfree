@@ -93,7 +93,7 @@ void spsc_queue_buffer_push_return_value(void)
 
     int data[xqueue_size];
     for (size_t i = 0; i != xqueue_size; ++i)
-        data[i] = i*2;
+        data[i] = (int)i*2;
 
     switch (EnqueueMode) {
     case pointer_and_size:
@@ -149,7 +149,7 @@ void spsc_queue_buffer_push(void)
 
     int data[xqueue_size];
     for (size_t i = 0; i != xqueue_size; ++i)
-        data[i] = i*2;
+        data[i] = (int)i*2;
 
     std::vector<int> vdata(data, data + xqueue_size);
 
@@ -198,7 +198,7 @@ void spsc_queue_buffer_pop(void)
 
     int data[xqueue_size];
     for (size_t i = 0; i != xqueue_size; ++i)
-        data[i] = i*2;
+        data[i] = (int)i*2;
 
     std::vector<int> vdata(data, data + xqueue_size);
 
@@ -340,7 +340,7 @@ struct spsc_queue_tester_buffering
     boost::lockfree::detail::atomic<long> spsc_queue_cnt;
 
     static_hashed_set<int, 1<<16 > working_set;
-    boost::lockfree::detail::atomic<long> received_nodes;
+    boost::lockfree::detail::atomic<size_t> received_nodes;
 
     spsc_queue_tester_buffering(void):
         spsc_queue_cnt(0), received_nodes(0)
