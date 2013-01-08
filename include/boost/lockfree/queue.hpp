@@ -74,6 +74,15 @@ class queue:
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
+
+#ifdef BOOST_HAS_TRIVIAL_DESTRUCTOR
+    BOOST_STATIC_ASSERT((boost::has_trivial_destructor<T>::value));
+#endif
+
+#ifdef BOOST_HAS_TRIVIAL_ASSIGN
+    BOOST_STATIC_ASSERT((boost::has_trivial_assign<T>::value));
+#endif
+
     typedef typename detail::queue_signature::bind<A0, A1, A2>::type bound_args;
 
     static const bool has_capacity = detail::extract_capacity<bound_args>::has_capacity;
