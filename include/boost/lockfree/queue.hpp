@@ -86,7 +86,7 @@ private:
     typedef typename detail::queue_signature::bind<A0, A1, A2>::type bound_args;
 
     static const bool has_capacity = detail::extract_capacity<bound_args>::has_capacity;
-    static const size_t capacity = detail::extract_capacity<bound_args>::capacity;
+    static const size_t capacity = detail::extract_capacity<bound_args>::capacity + 1; // the queue uses one dummy node
     static const bool fixed_sized = detail::extract_fixed_sized<bound_args>::value;
     static const bool node_based = !(has_capacity || fixed_sized);
     static const bool compile_time_sized = has_capacity;
