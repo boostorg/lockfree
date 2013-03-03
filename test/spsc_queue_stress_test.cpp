@@ -90,8 +90,8 @@ struct spsc_queue_tester
 
         BOOST_REQUIRE(sf.empty());
 
-        thread reader(boost::bind(&spsc_queue_tester::get, this));
-        thread writer(boost::bind(&spsc_queue_tester::add, this));
+        boost::thread reader(boost::bind(&spsc_queue_tester::get, this));
+        boost::thread writer(boost::bind(&spsc_queue_tester::add, this));
         cout << "reader and writer threads created" << endl;
 
         writer.join();
@@ -186,8 +186,8 @@ struct spsc_queue_tester_buffering
     {
         running = true;
 
-        thread reader(boost::bind(&spsc_queue_tester_buffering::get, this));
-        thread writer(boost::bind(&spsc_queue_tester_buffering::add, this));
+        boost::thread reader(boost::bind(&spsc_queue_tester_buffering::get, this));
+        boost::thread writer(boost::bind(&spsc_queue_tester_buffering::add, this));
         cout << "reader and writer threads created" << endl;
 
         writer.join();

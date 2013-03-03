@@ -6,8 +6,6 @@
 
 #include <boost/lockfree/spsc_queue.hpp>
 
-#include <boost/thread.hpp>
-
 #define BOOST_TEST_MAIN
 #ifdef BOOST_LOCKFREE_INCLUDE_TESTS
 #include <boost/test/included/unit_test.hpp>
