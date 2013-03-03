@@ -16,6 +16,8 @@
 
 #include <memory>
 
+#include "test_helpers.hpp"
+
 using namespace boost;
 using namespace boost::lockfree;
 using namespace std;
@@ -78,6 +80,58 @@ BOOST_AUTO_TEST_CASE( unsafe_queue_test )
 
     BOOST_REQUIRE(f.unsynchronized_pop(i2));
     BOOST_REQUIRE_EQUAL(i2, 2);
+    BOOST_REQUIRE(f.empty());
+}
+
+
+BOOST_AUTO_TEST_CASE( queue_consume_one_test )
+{
+    queue<int> f(64);
+
+    BOOST_WARN(f.is_lock_free());
+    BOOST_REQUIRE(f.empty());
+
+    f.push(1);
+    f.push(2);
+
+#ifdef BOOST_NO_CXX11_LAMBDAS
+    bool success1 = f.consume_one(test_equal(1));
+    bool success2 = f.consume_one(test_equal(2));
+#else
+    bool success1 = f.consume_one([] (int i) {
+        BOOST_REQUIRE_EQUAL(i, 1);
+    });
+
+    bool success2 = f.consume_one([] (int i) {
+        BOOST_REQUIRE_EQUAL(i, 2);
+    });
+#endif
+
+    BOOST_REQUIRE(success1);
+    BOOST_REQUIRE(success2);
+
+    BOOST_REQUIRE(f.empty());
+}
+
+BOOST_AUTO_TEST_CASE( queue_consume_all_test )
+{
+    queue<int> f(64);
+
+    BOOST_WARN(f.is_lock_free());
+    BOOST_REQUIRE(f.empty());
+
+    f.push(1);
+    f.push(2);
+
+#ifdef BOOST_NO_CXX11_LAMBDAS
+    size_t consumed = f.consume_all(dummy_functor());
+#else
+    size_t consumed = f.consume_all([] (int i) {
+    });
+#endif
+
+    BOOST_REQUIRE_EQUAL(consumed, 2u);
+
     BOOST_REQUIRE(f.empty());
 }
 

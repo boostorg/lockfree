@@ -85,4 +85,26 @@ private:
     mutable boost::array<boost::mutex, buckets> ref_mutex;
 };
 
+struct test_equal
+{
+    test_equal(int i):
+        i(i)
+    {}
+
+    void operator()(int arg) const
+    {
+        BOOST_REQUIRE_EQUAL(arg, i);
+    }
+
+    int i;
+};
+
+struct dummy_functor
+{
+    void operator()(int arg) const
+    {
+    }
+};
+
+
 #endif
