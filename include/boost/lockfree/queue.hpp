@@ -11,10 +11,10 @@
 #ifndef BOOST_LOCKFREE_FIFO_HPP_INCLUDED
 #define BOOST_LOCKFREE_FIFO_HPP_INCLUDED
 
-#include <memory>               /* std::auto_ptr */
-
 #include <boost/assert.hpp>
+#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
 #include <boost/noncopyable.hpp>
+#endif
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
@@ -69,8 +69,10 @@ template <typename T,
 #else
 template <typename T, ...Options>
 #endif
-class queue:
-    boost::noncopyable
+class queue
+#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
+    : boost::noncopyable
+#endif
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
@@ -135,6 +137,12 @@ private:
         typedef std::size_t size_type;
     };
 
+#endif
+
+#ifndef BOOST_NO_CXX11_DELETED_FUNCTIONS
+    queue(queue const &) = delete;
+    queue(queue &&)      = delete;
+    const queue& operator=( const queue& ) = delete;
 #endif
 
 public:
