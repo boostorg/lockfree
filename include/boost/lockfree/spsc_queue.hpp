@@ -692,9 +692,9 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template <typename Functor>
-    size_t consume_all(Functor & f)
+    size_type consume_all(Functor & f)
     {
-        size_t element_count = 0;
+        size_type element_count = 0;
         while (consume_one(f))
             element_count += 1;
 
@@ -703,9 +703,9 @@ public:
 
     /// \copydoc boost::lockfree::spsc_queue::consume_all(Functor & rhs)
     template <typename Functor>
-    size_t consume_all(Functor const & f)
+    size_type consume_all(Functor const & f)
     {
-        size_t element_count = 0;
+        size_type element_count = 0;
         while (consume_one(f))
             element_count += 1;
 
