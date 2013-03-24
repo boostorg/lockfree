@@ -15,6 +15,8 @@
 #include <boost/test/unit_test.hpp>
 #endif
 
+#include "test_helpers.hpp"
+
 BOOST_AUTO_TEST_CASE( simple_stack_test )
 {
     boost::lockfree::stack<long> stk(128);
@@ -106,4 +108,55 @@ BOOST_AUTO_TEST_CASE( bounded_stack_test_exhausted )
     BOOST_REQUIRE(stk.pop(out)); BOOST_REQUIRE_EQUAL(out, 1);
     BOOST_REQUIRE(!stk.pop(out));
     BOOST_REQUIRE(stk.empty());
+}
+
+BOOST_AUTO_TEST_CASE( stack_consume_one_test )
+{
+    boost::lockfree::stack<int> f(64);
+
+    BOOST_WARN(f.is_lock_free());
+    BOOST_REQUIRE(f.empty());
+
+    f.push(1);
+    f.push(2);
+
+#ifdef BOOST_NO_CXX11_LAMBDAS
+    bool success1 = f.consume_one(test_equal(2));
+    bool success2 = f.consume_one(test_equal(1));
+#else
+    bool success1 = f.consume_one([] (int i) {
+        BOOST_REQUIRE_EQUAL(i, 2);
+    });
+
+    bool success2 = f.consume_one([] (int i) {
+        BOOST_REQUIRE_EQUAL(i, 1);
+    });
+#endif
+
+    BOOST_REQUIRE(success1);
+    BOOST_REQUIRE(success2);
+
+    BOOST_REQUIRE(f.empty());
+}
+
+BOOST_AUTO_TEST_CASE( stack_consume_all_test )
+{
+    boost::lockfree::stack<int> f(64);
+
+    BOOST_WARN(f.is_lock_free());
+    BOOST_REQUIRE(f.empty());
+
+    f.push(1);
+    f.push(2);
+
+#ifdef BOOST_NO_CXX11_LAMBDAS
+    size_t consumed = f.consume_all(dummy_functor());
+#else
+    size_t consumed = f.consume_all([] (int i) {
+    });
+#endif
+
+    BOOST_REQUIRE_EQUAL(consumed, 2u);
+
+    BOOST_REQUIRE(f.empty());
 }

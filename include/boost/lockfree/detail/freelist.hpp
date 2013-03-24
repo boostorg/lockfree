@@ -298,6 +298,11 @@ public:
         return (index == rhs.index) && (tag == rhs.tag);
     }
 
+    bool operator!=(tagged_index const & rhs) const
+    {
+        return !operator==(rhs);
+    }
+
 protected:
     index_t index;
     tag_t tag;
