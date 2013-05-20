@@ -131,6 +131,21 @@ enum {
     output_iterator_
 };
 
+BOOST_AUTO_TEST_CASE( spsc_queue_capacity_test )
+{
+    spsc_queue<int, capacity<2> > f;
+
+    BOOST_REQUIRE(f.push(1));
+    BOOST_REQUIRE(f.push(2));
+    BOOST_REQUIRE(!f.push(3));
+
+    spsc_queue<int> g(2);
+
+    BOOST_REQUIRE(g.push(1));
+    BOOST_REQUIRE(g.push(2));
+    BOOST_REQUIRE(!g.push(3));
+}
+
 
 template <int EnqueueMode>
 void spsc_queue_buffer_push_return_value(void)
@@ -162,15 +177,15 @@ void spsc_queue_buffer_push_return_value(void)
 
     switch (EnqueueMode) {
     case pointer_and_size:
-        BOOST_REQUIRE_EQUAL(rb.push(data, xqueue_size), buffer_size - xqueue_size - 1);
+        BOOST_REQUIRE_EQUAL(rb.push(data, xqueue_size), buffer_size - xqueue_size);
         break;
 
     case reference_to_array:
-        BOOST_REQUIRE_EQUAL(rb.push(data), buffer_size - xqueue_size - 1);
+        BOOST_REQUIRE_EQUAL(rb.push(data), buffer_size - xqueue_size);
         break;
 
     case iterator_pair:
-        BOOST_REQUIRE_EQUAL(rb.push(data, data + xqueue_size), data + buffer_size - xqueue_size - 1);
+        BOOST_REQUIRE_EQUAL(rb.push(data, data + xqueue_size), data + buffer_size - xqueue_size);
         break;
 
     default:
