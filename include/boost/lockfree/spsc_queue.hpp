@@ -284,11 +284,12 @@ private:
     }
 };
 
-template <typename T, std::size_t max_size>
+template <typename T, std::size_t MaxSize>
 class compile_time_sized_ringbuffer:
     public ringbuffer_base<T>
 {
     typedef std::size_t size_t;
+    static const std::size_t max_size = MaxSize + 1;
     boost::array<T, max_size> array_;
 
 public:
@@ -349,7 +350,7 @@ class runtime_sized_ringbuffer:
 
 public:
     explicit runtime_sized_ringbuffer(size_t max_elements):
-        max_elements_(max_elements)
+        max_elements_(max_elements + 1)
     {
         // TODO: we don't necessarily need to construct all elements
         array_ = Alloc::allocate(max_elements);
@@ -359,7 +360,7 @@ public:
 
     template <typename U>
     runtime_sized_ringbuffer(typename Alloc::template rebind<U>::other const & alloc, size_t max_elements):
-        Alloc(alloc), max_elements_(max_elements)
+        Alloc(alloc), max_elements_(max_elements + 1)
     {
         // TODO: we don't necessarily need to construct all elements
         array_ = Alloc::allocate(max_elements);
@@ -368,7 +369,7 @@ public:
     }
 
     runtime_sized_ringbuffer(Alloc const & alloc, size_t max_elements):
-        Alloc(alloc), max_elements_(max_elements)
+        Alloc(alloc), max_elements_(max_elements + 1)
     {
         // TODO: we don't necessarily need to construct all elements
         array_ = Alloc::allocate(max_elements);
