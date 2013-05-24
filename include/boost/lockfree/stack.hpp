@@ -189,7 +189,7 @@ public:
     void reserve(size_type n)
     {
         BOOST_STATIC_ASSERT(!has_capacity);
-        pool.reserve(n);
+        pool.template reserve<true>(n);
     }
 
     /** Allocate n nodes for freelist
@@ -201,7 +201,7 @@ public:
     void reserve_unsafe(size_type n)
     {
         BOOST_STATIC_ASSERT(!has_capacity);
-        pool.reserve_unsafe(n);
+        pool.template reserve<false>(n);
     }
 
     /** Destroys stack, free all nodes from freelist.

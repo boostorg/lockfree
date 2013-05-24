@@ -160,3 +160,13 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_test )
 
     BOOST_REQUIRE(f.empty());
 }
+
+
+BOOST_AUTO_TEST_CASE( reserve_test )
+{
+    typedef boost::lockfree::stack< void* > memory_stack;
+
+    memory_stack ms(1);
+    ms.reserve(1);
+    ms.reserve_unsafe(1);
+}
