@@ -231,7 +231,7 @@ protected:
             size_t count0 = max_size - read_index;
             size_t count1 = avail - count0;
 
-            std::copy(internal_buffer + read_index, internal_buffer + max_size, it);
+            it = std::copy(internal_buffer + read_index, internal_buffer + max_size, it);
             std::copy(internal_buffer, internal_buffer + count1, it);
 
             new_read_index -= max_size;
