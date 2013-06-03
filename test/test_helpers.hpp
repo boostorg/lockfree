@@ -101,7 +101,7 @@ struct test_equal
 
 struct dummy_functor
 {
-    void operator()(int arg) const
+    void operator()(int /* arg */) const
     {
     }
 };
