@@ -319,7 +319,7 @@ struct compiletime_sized_freelist_storage
 
     // unused ... only for API purposes
     template <typename Allocator>
-    compiletime_sized_freelist_storage(Allocator const & alloc, std::size_t count)
+    compiletime_sized_freelist_storage(Allocator const & /* alloc */, std::size_t /* count */)
     {}
 
     T * nodes(void) const
