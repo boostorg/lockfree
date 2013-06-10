@@ -442,7 +442,7 @@ public:
             if (!old_tos_pointer)
                 return false;
 
-            tagged_node_handle new_tos(old_tos_pointer->next, old_tos.get_tag() + 1);
+            tagged_node_handle new_tos(old_tos_pointer->next, old_tos.get_next_tag());
 
             if (tos.compare_exchange_weak(old_tos, new_tos)) {
                 detail::copy_payload(old_tos_pointer->v, ret);
@@ -486,7 +486,7 @@ public:
             return false;
 
         node * new_tos_ptr = pool.get_pointer(old_tos_pointer->next);
-        tagged_node_handle new_tos(pool.get_handle(new_tos_ptr), old_tos.get_tag() + 1);
+        tagged_node_handle new_tos(pool.get_handle(new_tos_ptr), old_tos.get_next_tag());
 
         tos.store(new_tos, memory_order_relaxed);
         detail::copy_payload(old_tos_pointer->v, ret);
