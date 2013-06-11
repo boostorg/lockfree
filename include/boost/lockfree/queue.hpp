@@ -103,7 +103,7 @@ private:
         {
             /* increment tag to avoid ABA problem */
             tagged_node_handle old_next = next.load(memory_order_relaxed);
-            tagged_node_handle new_next (null_handle, old_next.get_tag()+1);
+            tagged_node_handle new_next (null_handle, old_next.get_next_tag());
             next.store(new_next, memory_order_release);
         }
 
@@ -301,15 +301,15 @@ private:
             tagged_node_handle tail2 = tail_.load(memory_order_acquire);
             if (likely(tail == tail2)) {
                 if (next_ptr == 0) {
-                    tagged_node_handle new_tail_next(node_handle, next.get_tag() + 1);
+                    tagged_node_handle new_tail_next(node_handle, next.get_next_tag());
                     if ( tail_node->next.compare_exchange_weak(next, new_tail_next) ) {
-                        tagged_node_handle new_tail(node_handle, tail.get_tag() + 1);
+                        tagged_node_handle new_tail(node_handle, tail.get_next_tag());
                         tail_.compare_exchange_strong(tail, new_tail);
                         return true;
                     }
                 }
                 else {
-                    tagged_node_handle new_tail(pool.get_handle(next_ptr), tail.get_tag() + 1);
+                    tagged_node_handle new_tail(pool.get_handle(next_ptr), tail.get_next_tag());
                     tail_.compare_exchange_strong(tail, new_tail);
                 }
             }
@@ -341,12 +341,12 @@ public:
             node * next_ptr = next.get_ptr();
 
             if (next_ptr == 0) {
-                tail->next.store(tagged_node_handle(n, next.get_tag() + 1), memory_order_relaxed);
-                tail_.store(tagged_node_handle(n, tail.get_tag() + 1), memory_order_relaxed);
+                tail->next.store(tagged_node_handle(n, next.get_next_tag()), memory_order_relaxed);
+                tail_.store(tagged_node_handle(n, tail.get_next_tag()), memory_order_relaxed);
                 return true;
             }
             else
-                tail_.store(tagged_node_handle(next_ptr, tail.get_tag() + 1), memory_order_relaxed);
+                tail_.store(tagged_node_handle(next_ptr, tail.get_next_tag()), memory_order_relaxed);
         }
     }
 
@@ -388,7 +388,7 @@ public:
                     if (next_ptr == 0)
                         return false;
 
-                    tagged_node_handle new_tail(pool.get_handle(next), tail.get_tag() + 1);
+                    tagged_node_handle new_tail(pool.get_handle(next), tail.get_next_tag());
                     tail_.compare_exchange_strong(tail, new_tail);
 
                 } else {
@@ -401,7 +401,7 @@ public:
                         continue;
                     detail::copy_payload(next_ptr->data, ret);
 
-                    tagged_node_handle new_head(pool.get_handle(next), head.get_tag() + 1);
+                    tagged_node_handle new_head(pool.get_handle(next), head.get_next_tag());
                     if (head_.compare_exchange_weak(head, new_head)) {
                         pool.template destruct<true>(head);
                         return true;
@@ -447,7 +447,7 @@ public:
                 if (next_ptr == 0)
                     return false;
 
-                tagged_node_handle new_tail(pool.get_handle(next), tail.get_tag() + 1);
+                tagged_node_handle new_tail(pool.get_handle(next), tail.get_next_tag());
                 tail_.store(new_tail);
             } else {
                 if (next_ptr == 0)
@@ -458,7 +458,7 @@ public:
                      * */
                     continue;
                 detail::copy_payload(next_ptr->data, ret);
-                tagged_node_handle new_head(pool.get_handle(next), head.get_tag() + 1);
+                tagged_node_handle new_head(pool.get_handle(next), head.get_next_tag());
                 head_.store(new_head);
                 pool.template destruct<false>(head);
                 return true;
