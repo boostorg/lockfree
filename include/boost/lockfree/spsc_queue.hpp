@@ -353,8 +353,8 @@ public:
         max_elements_(max_elements + 1)
     {
         // TODO: we don't necessarily need to construct all elements
-        array_ = Alloc::allocate(max_elements);
-        for (size_t i = 0; i != max_elements; ++i)
+        array_ = Alloc::allocate(max_elements_);
+        for (size_t i = 0; i != max_elements_; ++i)
             Alloc::construct(array_ + i, T());
     }
 
@@ -372,8 +372,8 @@ public:
         Alloc(alloc), max_elements_(max_elements + 1)
     {
         // TODO: we don't necessarily need to construct all elements
-        array_ = Alloc::allocate(max_elements);
-        for (size_t i = 0; i != max_elements; ++i)
+        array_ = Alloc::allocate(max_elements_);
+        for (size_t i = 0; i != max_elements_; ++i)
             Alloc::construct(array_ + i, T());
     }
 
