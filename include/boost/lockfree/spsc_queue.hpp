@@ -102,33 +102,7 @@ protected:
 
     size_t push(const T * input_buffer, size_t input_count, T * internal_buffer, size_t max_size)
     {
-        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
-        const size_t read_index  = read_index_.load(memory_order_acquire);
-        const size_t avail = write_available(write_index, read_index, max_size);
-
-        if (avail == 0)
-            return 0;
-
-        input_count = (std::min)(input_count, avail);
-
-        size_t new_write_index = write_index + input_count;
-
-        if (write_index + input_count > max_size) {
-            /* copy data in two sections */
-            const size_t count0 = max_size - write_index;
-
-            std::uninitialized_copy(input_buffer, input_buffer + count0, internal_buffer + write_index);
-            std::uninitialized_copy(input_buffer + count0, input_buffer + input_count, internal_buffer);
-            new_write_index -= max_size;
-        } else {
-            std::uninitialized_copy(input_buffer, input_buffer + input_count, internal_buffer + write_index);
-
-            if (new_write_index == max_size)
-                new_write_index = 0;
-        }
-
-        write_index_.store(new_write_index, memory_order_release);
-        return input_count;
+        return push(input_buffer, input_buffer + input_count, internal_buffer, max_size) - input_buffer;
     }
 
     template <typename ConstIterator>
