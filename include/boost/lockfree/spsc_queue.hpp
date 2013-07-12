@@ -20,6 +20,8 @@
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 
+#include <boost/type_traits/has_trivial_destructor.hpp>
+
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/branch_hints.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
@@ -287,11 +289,15 @@ private:
     template< class OutputIterator >
     OutputIterator copy_and_delete( T * first, T * last, OutputIterator out )
     {
-         for (; first != last; ++first, ++out) {
-             *out = *first;
-             first->~T();
-         }
-         return out;
+        if (boost::has_trivial_destructor<T>::value) {
+            return std::copy(first, last, out); // will use memcpy if possible
+        } else {
+            for (; first != last; ++first, ++out) {
+                *out = *first;
+                first->~T();
+            }
+            return out;
+        }
     }
 };
 
