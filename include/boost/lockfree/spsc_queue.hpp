@@ -1,7 +1,7 @@
 //  lock-free single-producer/single-consumer ringbuffer
 //  this algorithm is implemented in various projects (linux kernel)
 //
-//  Copyright (C) 2009, 2011 Tim Blechmann
+//  Copyright (C) 2009-2013 Tim Blechmann
 //
 //  Distributed under the Boost Software License, Version 1.0. (See
 //  accompanying file LICENSE_1_0.txt or copy at
@@ -87,8 +87,8 @@ protected:
 
     bool push(T const & t, T * buffer, size_t max_size)
     {
-        size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
-        size_t next = next_index(write_index, max_size);
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t next = next_index(write_index, max_size);
 
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
@@ -102,7 +102,7 @@ protected:
 
     size_t push(const T * input_buffer, size_t input_count, T * internal_buffer, size_t max_size)
     {
-        size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t read_index  = read_index_.load(memory_order_acquire);
         const size_t avail = write_available(write_index, read_index, max_size);
 
@@ -115,7 +115,7 @@ protected:
 
         if (write_index + input_count > max_size) {
             /* copy data in two sections */
-            size_t count0 = max_size - write_index;
+            const size_t count0 = max_size - write_index;
 
             std::uninitialized_copy(input_buffer, input_buffer + count0, internal_buffer + write_index);
             std::uninitialized_copy(input_buffer + count0, input_buffer + input_count, internal_buffer);
@@ -136,7 +136,7 @@ protected:
     {
         // FIXME: avoid std::distance
 
-        size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t read_index  = read_index_.load(memory_order_acquire);
         const size_t avail = write_available(write_index, read_index, max_size);
 
@@ -152,7 +152,7 @@ protected:
 
         if (write_index + input_count > max_size) {
             /* copy data in two sections */
-            size_t count0 = max_size - write_index;
+            const size_t count0 = max_size - write_index;
             const ConstIterator midpoint = boost::next(begin, count0);
 
             std::uninitialized_copy(begin, midpoint, internal_buffer + write_index);
@@ -171,8 +171,8 @@ protected:
 
     bool pop (T & ret, T * buffer, size_t max_size)
     {
-        size_t write_index = write_index_.load(memory_order_acquire);
-        size_t read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
+        const size_t write_index = write_index_.load(memory_order_acquire);
+        const size_t read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
         if (empty(write_index, read_index))
             return false;
 
@@ -187,7 +187,7 @@ protected:
     size_t pop (T * output_buffer, size_t output_count, T * internal_buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_acquire);
-        size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
 
         const size_t avail = read_available(write_index, read_index, max_size);
 
@@ -200,8 +200,8 @@ protected:
 
         if (read_index + output_count > max_size) {
             /* copy data in two sections */
-            size_t count0 = max_size - read_index;
-            size_t count1 = output_count - count0;
+            const size_t count0 = max_size - read_index;
+            const size_t count1 = output_count - count0;
 
             copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
             copy_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
@@ -221,7 +221,7 @@ protected:
     size_t pop (OutputIterator it, T * internal_buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_acquire);
-        size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
 
         const size_t avail = read_available(write_index, read_index, max_size);
         if (avail == 0)
@@ -231,8 +231,8 @@ protected:
 
         if (read_index + avail > max_size) {
             /* copy data in two sections */
-            size_t count0 = max_size - read_index;
-            size_t count1 = avail - count0;
+            const size_t count0 = max_size - read_index;
+            const size_t count1 = avail - count0;
 
             it = copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
             copy_and_delete(internal_buffer, internal_buffer + count1, it);
