@@ -11,6 +11,7 @@
 #define BOOST_LOCKFREE_SPSC_QUEUE_HPP_INCLUDED
 
 #include <algorithm>
+#include <memory>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
