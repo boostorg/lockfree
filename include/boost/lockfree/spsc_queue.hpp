@@ -25,6 +25,9 @@
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#pragma once
+#endif
 
 namespace boost    {
 namespace lockfree {

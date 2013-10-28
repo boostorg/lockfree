@@ -21,6 +21,10 @@
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#pragma once
+#endif
+
 namespace boost    {
 namespace lockfree {
 namespace detail   {

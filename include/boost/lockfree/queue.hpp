@@ -22,6 +22,11 @@
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#pragma once
+#endif
+
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable: 4324) // structure was padded due to __declspec(align())
