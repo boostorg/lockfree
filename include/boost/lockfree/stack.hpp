@@ -10,9 +10,6 @@
 #include <boost/assert.hpp>
 #include <boost/checked_delete.hpp>
 #include <boost/integer_traits.hpp>
-#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
-#include <boost/noncopyable.hpp>
-#endif
 #include <boost/static_assert.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
@@ -66,9 +63,6 @@ template <typename T,
 template <typename T, ...Options>
 #endif
 class stack
-#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
-    : boost::noncopyable
-#endif
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
@@ -112,11 +106,8 @@ private:
 
 #endif
 
-#ifndef BOOST_NO_CXX11_DELETED_FUNCTIONS
-    stack(stack const &) = delete;
-    stack(stack &&)      = delete;
-    const stack& operator=( const stack& ) = delete;
-#endif
+    BOOST_DELETED_FUNCTION(stack(stack const&))
+    BOOST_DELETED_FUNCTION(stack& operator= (stack const&))
 
 public:
     typedef T value_type;

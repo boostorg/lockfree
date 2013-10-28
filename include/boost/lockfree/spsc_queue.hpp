@@ -15,9 +15,6 @@
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
-#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
-#include <boost/noncopyable.hpp>
-#endif
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 
@@ -39,9 +36,6 @@ typedef parameter::parameters<boost::parameter::optional<tag::capacity>,
 
 template <typename T>
 class ringbuffer_base
-#ifdef BOOST_NO_CXX11_DELETED_FUNCTIONS
-        : boost::noncopyable
-#endif
 {
 #ifndef BOOST_DOXYGEN_INVOKED
     typedef std::size_t size_t;
@@ -50,11 +44,8 @@ class ringbuffer_base
     char padding1[padding_size]; /* force read_index and write_index to different cache lines */
     atomic<size_t> read_index_;
 
-#ifndef BOOST_NO_CXX11_DELETED_FUNCTIONS
-    ringbuffer_base(ringbuffer_base const &) = delete;
-    ringbuffer_base(ringbuffer_base &&)      = delete;
-    const ringbuffer_base& operator=( const ringbuffer_base& ) = delete;
-#endif
+    BOOST_DELETED_FUNCTION(ringbuffer_base(ringbuffer_base const&))
+    BOOST_DELETED_FUNCTION(ringbuffer_base& operator= (ringbuffer_base const&))
 
 protected:
     ringbuffer_base(void):
