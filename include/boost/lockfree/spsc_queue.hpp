@@ -68,7 +68,7 @@ protected:
         if (write_index >= read_index)
             return write_index - read_index;
 
-        size_t ret = write_index + max_size - read_index;
+        const size_t ret = write_index + max_size - read_index;
         return ret;
     }
 
@@ -78,6 +78,20 @@ protected:
         if (write_index >= read_index)
             ret += max_size;
         return ret;
+    }
+
+    size_t read_available(size_t max_size) const
+    {
+        size_t write_index = write_index_.load(memory_order_relaxed);
+        const size_t read_index  = read_index_.load(memory_order_relaxed);
+        return read_available(write_index, read_index, max_size);
+    }
+
+    size_t write_available(size_t max_size) const
+    {
+        size_t write_index = write_index_.load(memory_order_relaxed);
+        const size_t read_index  = read_index_.load(memory_order_relaxed);
+        return write_available(write_index, read_index, max_size);
     }
 
     bool push(T const & t, T * buffer, size_t max_size)
@@ -288,6 +302,12 @@ class compile_time_sized_ringbuffer:
         return static_cast<T*>(storage_.address());
     }
 
+protected:
+    size_t max_number_of_elements() const
+    {
+        return max_size;
+    }
+
 public:
     bool push(T const & t)
     {
@@ -343,6 +363,12 @@ class runtime_sized_ringbuffer:
     size_type max_elements_;
     typedef typename Alloc::pointer pointer;
     pointer array_;
+
+protected:
+    size_t max_number_of_elements() const
+    {
+        return max_elements_;
+    }
 
 public:
     explicit runtime_sized_ringbuffer(size_type max_elements):
@@ -700,6 +726,28 @@ public:
             element_count += 1;
 
         return element_count;
+    }
+
+    /** get number of elements that are available for read
+     *
+     * \return number of available elements that can be popped from the spsc_queue
+     *
+     * \note Thread-safe and wait-free, should only be called from the producer thread
+     * */
+    size_type read_available() const
+    {
+        return base_type::read_available(base_type::max_number_of_elements());
+    }
+
+    /** get write space to write elements
+     *
+     * \return number of elements that can be pushed to the spsc_queue
+     *
+     * \note Thread-safe and wait-free, should only be called from the consumer thread
+     * */
+    size_type write_available() const
+    {
+        return base_type::write_available(base_type::max_number_of_elements());
     }
 };
 
