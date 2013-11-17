@@ -240,8 +240,16 @@ public:
      * */
     void reset(void)
     {
-        write_index_.store(0, memory_order_relaxed);
-        read_index_.store(0, memory_order_release);
+        if ( !boost::has_trivial_destructor<T>::value ) {
+            // make sure to call all destructors!
+
+            T dummy_element;
+            while (pop(dummy_element))
+            {}
+        } else {
+            write_index_.store(0, memory_order_relaxed);
+            read_index_.store(0, memory_order_release);
+        }
     }
 
     /** Check if the ringbuffer is empty
@@ -679,6 +687,8 @@ public:
     template <typename Functor>
     bool consume_one(Functor & f)
     {
+        // Later: consume in-place!
+
         T element;
         bool success = pop(element);
         if (success)
@@ -691,6 +701,8 @@ public:
     template <typename Functor>
     bool consume_one(Functor const & f)
     {
+        // Later: consume in-place!
+
         T element;
         bool success = pop(element);
         if (success)
