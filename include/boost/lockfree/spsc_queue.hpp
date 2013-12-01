@@ -311,7 +311,7 @@ class compile_time_sized_ringbuffer:
     }
 
 protected:
-    size_t max_number_of_elements() const
+    size_type max_number_of_elements() const
     {
         return max_size;
     }
@@ -373,7 +373,7 @@ class runtime_sized_ringbuffer:
     pointer array_;
 
 protected:
-    size_t max_number_of_elements() const
+    size_type max_number_of_elements() const
     {
         return max_elements_;
     }
