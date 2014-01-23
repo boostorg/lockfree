@@ -1,4 +1,4 @@
-//  Copyright (C) 2011 Tim Blechmann
+//  Copyright (C) 2011-2013 Tim Blechmann
 //
 //  Distributed under the Boost Software License, Version 1.0. (See
 //  accompanying file LICENSE_1_0.txt or copy at
@@ -9,7 +9,8 @@
 
 #include <boost/config.hpp>
 
-// at this time, few compiles completely implement atomic<>
+#ifndef BOOST_LOCKFREE_FORCE_STD_ATOMIC
+
 #define BOOST_LOCKFREE_NO_HDR_ATOMIC
 
 // MSVC supports atomic<> from version 2012 onwards.
@@ -21,6 +22,9 @@
 #if (BOOST_GCC >= 40800) && (__cplusplus >= 201103L)
 #undef BOOST_LOCKFREE_NO_HDR_ATOMIC
 #endif
+
+#endif // BOOST_LOCKFREE_FORCE_STD_ATOMIC
+
 
 #if defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 #include <boost/atomic.hpp>
