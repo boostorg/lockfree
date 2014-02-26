@@ -57,7 +57,7 @@ struct consume_via_copy
         copy_payload(element, out);
     }
 
-    T &  out;
+    T & out;
 };
 
 
