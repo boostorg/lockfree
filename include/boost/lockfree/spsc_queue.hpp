@@ -259,6 +259,40 @@ protected:
         return output_count;
     }
 
+    size_t pop (size_t pop_count, T * internal_buffer, size_t max_size)
+    {
+        const size_t write_index = write_index_.load(memory_order_acquire);
+        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+
+        const size_t avail = read_available(write_index, read_index, max_size);
+
+        if (avail == 0)
+            return 0;
+
+        pop_count = (std::min)(pop_count, avail);
+
+        size_t new_read_index = read_index + pop_count;
+
+        if (new_read_index > max_size) {
+            /* pop data in two sections */
+            const size_t count0 = max_size - read_index;
+            const size_t count1 = new_read_index - count0;
+
+            delete_range(internal_buffer + read_index, internal_buffer + max_size);
+            delete_range(internal_buffer, internal_buffer + count1);
+
+            new_read_index -= max_size;
+        } else {
+            delete_range(internal_buffer + read_index, internal_buffer + read_index + pop_count);
+            if (new_read_index == max_size)
+                new_read_index = 0;
+        }
+
+        read_index_.store(new_read_index, memory_order_release);
+
+        return pop_count;
+    }
+
     size_t pop (T * output_buffer, size_t output_count, T * internal_buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_acquire);
@@ -322,6 +356,12 @@ protected:
         read_index_.store(new_read_index, memory_order_release);
         return avail;
     }
+
+    const T& front(const T * internal_buffer) const
+    {
+        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        return *(internal_buffer + read_index);
+    }
 #endif
 
 
@@ -367,6 +407,15 @@ private:
     bool empty(size_t write_index, size_t read_index)
     {
         return write_index == read_index;
+    }
+
+    void delete_range( T * first, T * last )
+    {
+        if ( ! boost::has_trivial_destructor<T>::value) {
+            for (; first != last; ++first) {
+                first->~T();
+            }
+        }
     }
 
     template< class OutputIterator >
@@ -418,6 +467,11 @@ class compile_time_sized_ringbuffer:
     T * data()
     {
         return static_cast<T*>(storage_.address());
+    }
+
+    const T * data() const
+    {
+        return static_cast<const T*>(storage_.address());
     }
 
 protected:
@@ -473,6 +527,11 @@ public:
         return ringbuffer_base<T>::push(begin, end, data(), max_size);
     }
 
+    size_type pop(size_type size)
+    {
+        return ringbuffer_base<T>::pop(size, data(), max_size);
+    }
+
     size_type pop(T * ret, size_type size)
     {
         return ringbuffer_base<T>::pop(ret, size, data(), max_size);
@@ -482,6 +541,11 @@ public:
     size_type pop_to_output_iterator(OutputIterator it)
     {
         return ringbuffer_base<T>::pop_to_output_iterator(it, data(), max_size);
+    }
+
+    const T& front(void) const
+    {
+        return ringbuffer_base<T>::front(data());
     }
 };
 
@@ -576,6 +640,11 @@ public:
         return ringbuffer_base<T>::push(begin, end, array_, max_elements_);
     }
 
+    size_type pop(size_type size)
+    {
+        return ringbuffer_base<T>::pop(size, array_, max_elements_);
+    }
+
     size_type pop(T * ret, size_type size)
     {
         return ringbuffer_base<T>::pop(ret, size, array_, max_elements_);
@@ -585,6 +654,11 @@ public:
     size_type pop_to_output_iterator(OutputIterator it)
     {
         return ringbuffer_base<T>::pop_to_output_iterator(it, array_, max_elements_);
+    }
+
+    const T& front(void) const
+    {
+        return ringbuffer_base<T>::front(array_);
     }
 };
 
@@ -721,6 +795,19 @@ public:
     bool push(T const & t)
     {
         return base_type::push(t);
+    }
+
+    /** Pops one object from ringbuffer.
+     *
+     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \post if ringbuffer is not empty, object will be discarded.
+     * \return true, if the pop operation is successful, false if ringbuffer was empty.
+     *
+     * \note Thread-safe and wait-free
+     */
+    bool pop ()
+    {
+        return base_type::pop(1);
     }
 
     /** Pops one object from ringbuffer.
@@ -878,6 +965,19 @@ public:
     size_type write_available() const
     {
         return base_type::write_available(base_type::max_number_of_elements());
+    }
+
+    /** get reference to element in the front of the queue
+     *
+     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre if ringbuffer is not empty, it's undefined behaviour to invoke this method.
+     * \return reference to the first element in the queue
+     *
+     * \note Thread-safe and wait-free
+     */
+    const T& front() const
+    {
+        return base_type::front();
     }
 };
 
