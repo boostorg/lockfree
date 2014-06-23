@@ -969,8 +969,10 @@ public:
 
     /** get reference to element in the front of the queue
      *
+     * Availability of front element can be checked using read_available().
+     *
      * \pre only one thread is allowed to pop data to the spsc_queue
-     * \pre if ringbuffer is not empty, it's undefined behaviour to invoke this method.
+     * \pre if ringbuffer is empty, it's undefined behaviour to invoke this method.
      * \return reference to the first element in the queue
      *
      * \note Thread-safe and wait-free
