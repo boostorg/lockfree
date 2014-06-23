@@ -972,13 +972,14 @@ public:
      * Availability of front element can be checked using read_available().
      *
      * \pre only one thread is allowed to pop data to the spsc_queue
-     * \pre if ringbuffer is empty, it's undefined behaviour to invoke this method.
+     * \pre read_available() > 0. If ringbuffer is empty, it's undefined behaviour to invoke this method.
      * \return reference to the first element in the queue
      *
      * \note Thread-safe and wait-free
      */
     const T& front() const
     {
+        BOOST_ASSERT(read_available() > 0);
         return base_type::front();
     }
 };
