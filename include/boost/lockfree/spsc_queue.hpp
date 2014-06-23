@@ -259,40 +259,6 @@ protected:
         return output_count;
     }
 
-    size_t pop (size_t pop_count, T * internal_buffer, size_t max_size)
-    {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-
-        const size_t avail = read_available(write_index, read_index, max_size);
-
-        if (avail == 0)
-            return 0;
-
-        pop_count = (std::min)(pop_count, avail);
-
-        size_t new_read_index = read_index + pop_count;
-
-        if (new_read_index > max_size) {
-            /* pop data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = new_read_index - count0;
-
-            delete_range(internal_buffer + read_index, internal_buffer + max_size);
-            delete_range(internal_buffer, internal_buffer + count1);
-
-            new_read_index -= max_size;
-        } else {
-            delete_range(internal_buffer + read_index, internal_buffer + read_index + pop_count);
-            if (new_read_index == max_size)
-                new_read_index = 0;
-        }
-
-        read_index_.store(new_read_index, memory_order_release);
-
-        return pop_count;
-    }
-
     size_t pop (T * output_buffer, size_t output_count, T * internal_buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_acquire);
@@ -527,11 +493,6 @@ public:
         return ringbuffer_base<T>::push(begin, end, data(), max_size);
     }
 
-    size_type pop(size_type size)
-    {
-        return ringbuffer_base<T>::pop(size, data(), max_size);
-    }
-
     size_type pop(T * ret, size_type size)
     {
         return ringbuffer_base<T>::pop(ret, size, data(), max_size);
@@ -638,11 +599,6 @@ public:
     ConstIterator push(ConstIterator begin, ConstIterator end)
     {
         return ringbuffer_base<T>::push(begin, end, array_, max_elements_);
-    }
-
-    size_type pop(size_type size)
-    {
-        return ringbuffer_base<T>::pop(size, array_, max_elements_);
     }
 
     size_type pop(T * ret, size_type size)
@@ -807,7 +763,8 @@ public:
      */
     bool pop ()
     {
-        return base_type::pop(1);
+        detail::consume_noop consume_functor;
+        return consume_one( consume_functor );
     }
 
     /** Pops one object from ringbuffer.
