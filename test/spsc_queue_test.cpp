@@ -350,20 +350,20 @@ void spsc_queue_front_pop(Queue& queue)
     queue.push(2);
     queue.push(3);
 
-    int front = 0;
+    const int* front = NULL;
 
     // access element pushed first
     front = queue.front();
-    BOOST_REQUIRE_EQUAL(1, front);
+    BOOST_REQUIRE_EQUAL(1, *front);
 
     // front is still the same
     front = queue.front();
-    BOOST_REQUIRE_EQUAL(1, front);
+    BOOST_REQUIRE_EQUAL(1, *front);
 
     queue.pop();
 
     front = queue.front();
-    BOOST_REQUIRE_EQUAL(2, front);
+    BOOST_REQUIRE_EQUAL(2, *front);
 
     queue.pop(); // pop 2
 
@@ -372,6 +372,9 @@ void spsc_queue_front_pop(Queue& queue)
 
     pop_ret = queue.pop(); // pop on empty queue
     BOOST_REQUIRE( ! pop_ret);
+
+    front = queue.front(); // front of empty queue is NULL
+    BOOST_REQUIRE(NULL == front);
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_buffer_front_and_pop_runtime_sized_test )

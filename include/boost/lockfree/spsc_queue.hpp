@@ -357,10 +357,14 @@ protected:
         return avail;
     }
 
-    const T& front(const T * internal_buffer) const
+    const T* front(const T * internal_buffer) const
     {
+        const size_t write_index = write_index_.load(memory_order_acquire);
         const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-        return *(internal_buffer + read_index);
+
+        return (empty(write_index, read_index))
+            ? NULL
+            : internal_buffer + read_index;
     }
 #endif
 
@@ -404,7 +408,7 @@ public:
     }
 
 private:
-    bool empty(size_t write_index, size_t read_index)
+    bool empty(size_t write_index, size_t read_index) const
     {
         return write_index == read_index;
     }
@@ -543,7 +547,7 @@ public:
         return ringbuffer_base<T>::pop_to_output_iterator(it, data(), max_size);
     }
 
-    const T& front(void) const
+    const T* front(void) const
     {
         return ringbuffer_base<T>::front(data());
     }
@@ -656,7 +660,7 @@ public:
         return ringbuffer_base<T>::pop_to_output_iterator(it, array_, max_elements_);
     }
 
-    const T& front(void) const
+    const T* front(void) const
     {
         return ringbuffer_base<T>::front(array_);
     }
@@ -967,15 +971,14 @@ public:
         return base_type::write_available(base_type::max_number_of_elements());
     }
 
-    /** get reference to element in the front of the queue
+    /** get pointer to element in the front of the queue
      *
      * \pre only one thread is allowed to pop data to the spsc_queue
-     * \pre if ringbuffer is not empty, it's undefined behaviour to invoke this method.
-     * \return reference to the first element in the queue
+     * \return pointer to the first element in the queue or NULL if queue is empty
      *
      * \note Thread-safe and wait-free
      */
-    const T& front() const
+    const T* front() const
     {
         return base_type::front();
     }
