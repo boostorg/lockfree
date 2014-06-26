@@ -350,6 +350,13 @@ void spsc_queue_front_pop(Queue& queue)
     queue.push(2);
     queue.push(3);
 
+    // front as ref and const ref
+    int& rfront = queue.front();
+    const int& crfront = queue.front();
+
+    BOOST_REQUIRE_EQUAL(1, rfront);
+    BOOST_REQUIRE_EQUAL(1, crfront);
+
     int front = 0;
 
     // access element pushed first

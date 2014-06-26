@@ -328,6 +328,12 @@ protected:
         const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
         return *(internal_buffer + read_index);
     }
+
+    T& front(T * internal_buffer)
+    {
+        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        return *(internal_buffer + read_index);
+    }
 #endif
 
 
@@ -499,6 +505,11 @@ public:
     {
         return ringbuffer_base<T>::front(data());
     }
+
+    T& front(void)
+    {
+        return ringbuffer_base<T>::front(data());
+    }
 };
 
 template <typename T, typename Alloc>
@@ -604,6 +615,11 @@ public:
     }
 
     const T& front(void) const
+    {
+        return ringbuffer_base<T>::front(array_);
+    }
+
+    T& front(void)
     {
         return ringbuffer_base<T>::front(array_);
     }
@@ -919,13 +935,20 @@ public:
      *
      * Availability of front element can be checked using read_available().
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to check front element
      * \pre read_available() > 0. If ringbuffer is empty, it's undefined behaviour to invoke this method.
      * \return reference to the first element in the queue
      *
      * \note Thread-safe and wait-free
      */
     const T& front() const
+    {
+        BOOST_ASSERT(read_available() > 0);
+        return base_type::front();
+    }
+
+    /// \copydoc boost::lockfree::spsc_queue::front() const
+    T& front()
     {
         BOOST_ASSERT(read_available() > 0);
         return base_type::front();
