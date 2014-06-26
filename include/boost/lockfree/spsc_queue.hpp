@@ -375,15 +375,6 @@ private:
         return write_index == read_index;
     }
 
-    void delete_range( T * first, T * last )
-    {
-        if ( ! boost::has_trivial_destructor<T>::value) {
-            for (; first != last; ++first) {
-                first->~T();
-            }
-        }
-    }
-
     template< class OutputIterator >
     OutputIterator copy_and_delete( T * first, T * last, OutputIterator out )
     {
