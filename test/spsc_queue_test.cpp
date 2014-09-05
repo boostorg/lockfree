@@ -392,3 +392,16 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_front_and_pop_compiletime_sized_test )
     spsc_queue<int> queue(64);
     spsc_queue_front_pop(queue);
 }
+
+BOOST_AUTO_TEST_CASE( spsc_queue_reset_test )
+{
+    spsc_queue<int, capacity<64> > f;
+
+    BOOST_REQUIRE(f.empty());
+    f.push(1);
+    f.push(2);
+
+    f.reset();
+
+    BOOST_REQUIRE(f.empty());
+}
