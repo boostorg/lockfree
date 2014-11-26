@@ -971,7 +971,9 @@ public:
             base_type::write_index_.store(0, memory_order_relaxed);
             base_type::read_index_.store(0, memory_order_release);
         }
-   };
+   }
+};
+
 } /* namespace lockfree */
 } /* namespace boost */
 
