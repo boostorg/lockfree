@@ -195,8 +195,9 @@ public:
         return last;
     }
 
+private:
     template <typename Functor>
-    bool consume_one(Functor & functor)
+    bool consume_one_tmpl(Functor& functor)
     {
         const size_type write_index = write_index_.load(memory_order_acquire);
         const size_type read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
@@ -204,7 +205,7 @@ public:
             return false;
 
         T & object_to_consume = data()[read_index];
-        functor( object_to_consume );
+        functor( BOOST_LOCKFREE_MOVE_MOVE(object_to_consume) );
         object_to_consume.~T();
 
         size_type next = next_index(read_index);
@@ -213,24 +214,7 @@ public:
     }
 
     template <typename Functor>
-    bool consume_one(Functor const & functor)
-    {
-        const size_type write_index = write_index_.load(memory_order_acquire);
-        const size_type read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
-        if ( empty(write_index, read_index) )
-            return false;
-
-        T & object_to_consume = data()[read_index];
-        functor( object_to_consume );
-        object_to_consume.~T();
-
-        size_type next = next_index(read_index);
-        read_index_.store(next, memory_order_release);
-        return true;
-    }
-
-    template <typename Functor>
-    size_type consume_all (Functor const & functor)
+    size_type consume_all_tmpl(Functor& functor)
     {
         const size_type write_index = write_index_.load(memory_order_acquire);
         const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
@@ -264,40 +248,31 @@ public:
         return output_count;
     }
 
+public:
     template <typename Functor>
-    size_type consume_all (Functor & functor)
+    bool consume_one(Functor& functor)
     {
-        const size_type write_index = write_index_.load(memory_order_acquire);
-        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-
-        const size_type avail = read_available(write_index, read_index);
-
-        if (avail == 0)
-            return 0;
-
-        const size_type output_count = avail;
-
-        size_type new_read_index = read_index + output_count;
-
-        if (read_index + output_count > max_size()) {
-            /* copy data in two sections */
-            const size_type count0 = max_size() - read_index;
-            const size_type count1 = output_count - count0;
-
-            run_functor_and_delete(data() + read_index, data() + max_size(), functor);
-            run_functor_and_delete(data(), data() + count1, functor);
-
-            new_read_index -= max_size();
-        } else {
-            run_functor_and_delete(data() + read_index, data() + read_index + output_count, functor);
-
-            if (new_read_index == max_size())
-                new_read_index = 0;
-        }
-
-        read_index_.store(new_read_index, memory_order_release);
-        return output_count;
+        return consume_one_tmpl<Functor>(functor);
     }
+
+    template <typename Functor>
+    bool consume_one(Functor const& functor)
+    {
+        return consume_one_tmpl<Functor const>(functor);
+    }
+
+    template <typename Functor>
+    size_type consume_all (Functor& functor)
+    {
+        return consume_all_tmpl<Functor>(functor);
+    }
+
+    template <typename Functor>
+    size_type consume_all (Functor const& functor)
+    {
+        return consume_all_tmpl<Functor const>(functor);
+    }
+
 
     size_type pop (T * output_buffer, size_type output_count)
     {
@@ -427,7 +402,7 @@ private:
             return std::copy(first, last, out); // will use memcpy if possible
         } else {
             for (; first != last; ++first, ++out) {
-                *out = *first;
+                *out = BOOST_LOCKFREE_MOVE_MOVE(*first);
                 first->~T();
             }
             return out;
@@ -438,7 +413,7 @@ private:
     void run_functor_and_delete( T * first, T * last, Functor & functor )
     {
         for (; first != last; ++first) {
-            functor(*first);
+            functor(BOOST_LOCKFREE_MOVE_MOVE(*first));
             first->~T();
         }
     }
@@ -447,7 +422,7 @@ private:
     void run_functor_and_delete( T * first, T * last, Functor const & functor )
     {
         for (; first != last; ++first) {
-            functor(*first);
+            functor(BOOST_LOCKFREE_MOVE_MOVE(*first));
             first->~T();
         }
     }

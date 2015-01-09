@@ -14,6 +14,7 @@
     #include <utility>
 
     #define BOOST_LOCKFREE_MOVE_RREF_OR_REF &&
+    #define BOOST_LOCKFREE_MOVE_MOVE(_value_) std::move(_value_)
 
     #define BOOST_LOCKFREE_MOVE_MKFWD_(_type_) ForwardTo ## _type_
     #define BOOST_LOCKFREE_MOVE_MKFWD(_type_) BOOST_LOCKFREE_MOVE_MKFWD_(_type_)
@@ -25,6 +26,7 @@
 #else
 
     #define BOOST_LOCKFREE_MOVE_RREF_OR_REF &
+    #define BOOST_LOCKFREE_MOVE_MOVE(_value_) (_value_)
 
     #define BOOST_LOCKFREE_MOVE_TEMPLATE(_type_)
     #define BOOST_LOCKFREE_MOVE_ARG_TYPE(_type_) _type_ const &

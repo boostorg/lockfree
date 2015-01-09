@@ -25,7 +25,7 @@ struct consume_and_store
     template <typename Source>
     void operator()(Source BOOST_LOCKFREE_MOVE_RREF_OR_REF source)
     {
-        target_ = source;
+        target_ = BOOST_LOCKFREE_MOVE_MOVE(source);
     }
 
     Target& target_;
