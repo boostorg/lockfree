@@ -463,13 +463,13 @@ public:
     }
 
     template <typename Functor>
-    bool consume_all(Functor & f)
+    size_type consume_all(Functor & f)
     {
         return ringbuffer_base<T>::consume_all(f, data(), max_size);
     }
 
     template <typename Functor>
-    bool consume_all(Functor const & f)
+    size_type consume_all(Functor const & f)
     {
         return ringbuffer_base<T>::consume_all(f, data(), max_size);
     }
