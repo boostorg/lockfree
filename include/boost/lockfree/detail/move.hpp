@@ -30,7 +30,7 @@
 
     #define BOOST_LOCKFREE_MOVE_TEMPLATE(_type_)
     #define BOOST_LOCKFREE_MOVE_ARG_TYPE(_type_) _type_ const &
-    #define BOOST_LOCKFREE_MOVE_ARG(_type_, _value_) _value_
+    #define BOOST_LOCKFREE_MOVE_FORWARD(_type_, _value_) _value_
 
 #endif
 
