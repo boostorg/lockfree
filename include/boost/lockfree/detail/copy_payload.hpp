@@ -9,55 +9,26 @@
 #ifndef BOOST_LOCKFREE_DETAIL_COPY_PAYLOAD_HPP_INCLUDED
 #define BOOST_LOCKFREE_DETAIL_COPY_PAYLOAD_HPP_INCLUDED
 
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits/is_convertible.hpp>
+#include <boost/lockfree/detail/move.hpp>
 
 namespace boost    {
 namespace lockfree {
 namespace detail   {
 
-struct copy_convertible
+template <typename Target>
+struct consume_and_store
 {
-    template <typename T, typename U>
-    static void copy(T & t, U & u)
-    {
-        u = t;
-    }
-};
-
-struct copy_constructible_and_copyable
-{
-    template <typename T, typename U>
-    static void copy(T & t, U & u)
-    {
-        u = U(t);
-    }
-};
-
-template <typename T, typename U>
-void copy_payload(T & t, U & u)
-{
-    typedef typename boost::mpl::if_<typename boost::is_convertible<T, U>::type,
-                                     copy_convertible,
-                                     copy_constructible_and_copyable
-                                    >::type copy_type;
-    copy_type::copy(t, u);
-}
-
-template <typename T>
-struct consume_via_copy
-{
-    consume_via_copy(T & out):
-        out_(out)
+    consume_and_store(Target& target):
+        target_(target)
     {}
 
-    template <typename U>
-    void operator()(U & element)
+    template <typename Source>
+    void operator()(Source BOOST_LOCKFREE_MOVE_RREF_OR_REF source)
     {
-        copy_payload(element, out_);
+        target_ = BOOST_LOCKFREE_MOVE_MOVE(source);
     }
 
-    T & out_;
+    Target& target_;
 };
 
 struct consume_noop

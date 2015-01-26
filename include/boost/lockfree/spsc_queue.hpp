@@ -27,6 +27,7 @@
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
+#include <boost/lockfree/detail/move.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #pragma once
@@ -40,114 +41,153 @@ typedef parameter::parameters<boost::parameter::optional<tag::capacity>,
                               boost::parameter::optional<tag::allocator>
                              > ringbuffer_signature;
 
-template <typename T>
+template <class buffer_t>
+struct buffer_traits;
+
+template <typename derived_t>
 class ringbuffer_base
 {
 #ifndef BOOST_DOXYGEN_INVOKED
-    typedef std::size_t size_t;
-    static const int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof(size_t);
-    atomic<size_t> write_index_;
+    typedef typename buffer_traits<derived_t>::value_type T;
+    typedef typename buffer_traits<derived_t>::size_type size_type;
+
+    static const int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof(atomic<size_type>);
+
+    atomic<size_type> write_index_;
     char padding1[padding_size]; /* force read_index and write_index to different cache lines */
-    atomic<size_t> read_index_;
+    atomic<size_type> read_index_;
 
     BOOST_DELETED_FUNCTION(ringbuffer_base(ringbuffer_base const&))
     BOOST_DELETED_FUNCTION(ringbuffer_base& operator= (ringbuffer_base const&))
+
+private:
+    derived_t const& as_derived() const { return static_cast<derived_t const &>(*this); }
+    derived_t      & as_derived()       { return static_cast<derived_t       &>(*this); }
+
+    T const* data() const { return as_derived().data(); }
+    T      * data()       { return as_derived().data(); }
+
+    size_type max_size() const
+    {
+        return as_derived().max_size();
+    }
 
 protected:
     ringbuffer_base(void):
         write_index_(0), read_index_(0)
     {}
 
-    static size_t next_index(size_t arg, size_t max_size)
+    size_type next_index(size_type arg)
     {
-        size_t ret = arg + 1;
-        while (unlikely(ret >= max_size))
-            ret -= max_size;
+        size_type ret = arg + 1;
+        while (unlikely(ret >= max_size()))
+            ret -= max_size();
         return ret;
     }
 
-    static size_t read_available(size_t write_index, size_t read_index, size_t max_size)
+    size_type read_available(size_type write_index, size_type read_index)
     {
         if (write_index >= read_index)
             return write_index - read_index;
 
-        const size_t ret = write_index + max_size - read_index;
+        const size_type ret = write_index + max_size() - read_index;
         return ret;
     }
 
-    static size_t write_available(size_t write_index, size_t read_index, size_t max_size)
+    size_type write_available(size_type write_index, size_type read_index)
     {
-        size_t ret = read_index - write_index - 1;
+        size_type ret = read_index - write_index - 1;
         if (write_index >= read_index)
-            ret += max_size;
+            ret += max_size();
         return ret;
     }
 
-    size_t read_available(size_t max_size) const
+    size_type read_available() const
     {
-        size_t write_index = write_index_.load(memory_order_relaxed);
-        const size_t read_index  = read_index_.load(memory_order_relaxed);
-        return read_available(write_index, read_index, max_size);
+        size_type write_index = write_index_.load(memory_order_relaxed);
+        const size_type read_index  = read_index_.load(memory_order_relaxed);
+        return read_available(write_index, read_index);
     }
 
-    size_t write_available(size_t max_size) const
+    size_type write_available() const
     {
-        size_t write_index = write_index_.load(memory_order_relaxed);
-        const size_t read_index  = read_index_.load(memory_order_relaxed);
-        return write_available(write_index, read_index, max_size);
+        size_type write_index = write_index_.load(memory_order_relaxed);
+        const size_type read_index  = read_index_.load(memory_order_relaxed);
+        return write_available(write_index, read_index);
     }
 
-    bool push(T const & t, T * buffer, size_t max_size)
+private:
+    BOOST_LOCKFREE_MOVE_TEMPLATE(T)
+    bool push_one(BOOST_LOCKFREE_MOVE_ARG_TYPE(T) t)
     {
-        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
-        const size_t next = next_index(write_index, max_size);
+        const size_type write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_type next = next_index(write_index);
 
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(t); // copy-construct
+        new (data() + write_index) T(BOOST_LOCKFREE_MOVE_FORWARD(T, t)); // copy- or move-construct
 
         write_index_.store(next, memory_order_release);
 
         return true;
     }
 
-    size_t push(const T * input_buffer, size_t input_count, T * internal_buffer, size_t max_size)
+public:
+    bool push(T const& t)
     {
-        return push(input_buffer, input_buffer + input_count, internal_buffer, max_size) - input_buffer;
+        return push_one(t);
+    }
+
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T&& t)
+    {
+        return push_one(std::move(t));
+    }
+#endif
+
+    size_type push(const T * input_buffer, size_type input_count)
+    {
+        return push(input_buffer, input_buffer + input_count) - input_buffer;
+    }
+
+    template <size_type size>
+    size_type push(T const (&t)[size])
+    {
+        return push(t, size);
     }
 
     template <typename ConstIterator>
-    ConstIterator push(ConstIterator begin, ConstIterator end, T * internal_buffer, size_t max_size)
+    ConstIterator push(ConstIterator begin, ConstIterator end)
     {
         // FIXME: avoid std::distance
 
-        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
-        const size_t read_index  = read_index_.load(memory_order_acquire);
-        const size_t avail = write_available(write_index, read_index, max_size);
+        const size_type write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_type read_index  = read_index_.load(memory_order_acquire);
+        const size_type avail = write_available(write_index, read_index);
 
         if (avail == 0)
             return begin;
 
-        size_t input_count = std::distance(begin, end);
+        size_type input_count = std::distance(begin, end);
         input_count = (std::min)(input_count, avail);
 
-        size_t new_write_index = write_index + input_count;
+        size_type new_write_index = write_index + input_count;
 
         const ConstIterator last = boost::next(begin, input_count);
 
-        if (write_index + input_count > max_size) {
+        if (write_index + input_count > max_size()) {
             /* copy data in two sections */
-            const size_t count0 = max_size - write_index;
+            const size_type count0 = max_size() - write_index;
             const ConstIterator midpoint = boost::next(begin, count0);
 
-            std::uninitialized_copy(begin, midpoint, internal_buffer + write_index);
-            std::uninitialized_copy(midpoint, last, internal_buffer);
-            new_write_index -= max_size;
+            std::uninitialized_copy(begin, midpoint, data() + write_index);
+            std::uninitialized_copy(midpoint, last, data());
+            new_write_index -= max_size();
         } else {
-            std::uninitialized_copy(begin, last, internal_buffer + write_index);
+            std::uninitialized_copy(begin, last, data() + write_index);
 
-            if (new_write_index == max_size)
+            if (new_write_index == max_size())
                 new_write_index = 0;
         }
 
@@ -155,68 +195,52 @@ protected:
         return last;
     }
 
+private:
     template <typename Functor>
-    bool consume_one(Functor & functor, T * buffer, size_t max_size)
+    bool consume_one_tmpl(Functor& functor)
     {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
+        const size_type write_index = write_index_.load(memory_order_acquire);
+        const size_type read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
         if ( empty(write_index, read_index) )
             return false;
 
-        T & object_to_consume = buffer[read_index];
-        functor( object_to_consume );
+        T & object_to_consume = data()[read_index];
+        functor( BOOST_LOCKFREE_MOVE_MOVE(object_to_consume) );
         object_to_consume.~T();
 
-        size_t next = next_index(read_index, max_size);
+        size_type next = next_index(read_index);
         read_index_.store(next, memory_order_release);
         return true;
     }
 
     template <typename Functor>
-    bool consume_one(Functor const & functor, T * buffer, size_t max_size)
+    size_type consume_all_tmpl(Functor& functor)
     {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index  = read_index_.load(memory_order_relaxed); // only written from pop thread
-        if ( empty(write_index, read_index) )
-            return false;
+        const size_type write_index = write_index_.load(memory_order_acquire);
+        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
 
-        T & object_to_consume = buffer[read_index];
-        functor( object_to_consume );
-        object_to_consume.~T();
-
-        size_t next = next_index(read_index, max_size);
-        read_index_.store(next, memory_order_release);
-        return true;
-    }
-
-    template <typename Functor>
-    size_t consume_all (Functor const & functor, T * internal_buffer, size_t max_size)
-    {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-
-        const size_t avail = read_available(write_index, read_index, max_size);
+        const size_type avail = read_available(write_index, read_index);
 
         if (avail == 0)
             return 0;
 
-        const size_t output_count = avail;
+        const size_type output_count = avail;
 
-        size_t new_read_index = read_index + output_count;
+        size_type new_read_index = read_index + output_count;
 
-        if (read_index + output_count > max_size) {
+        if (read_index + output_count > max_size()) {
             /* copy data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = output_count - count0;
+            const size_type count0 = max_size() - read_index;
+            const size_type count1 = output_count - count0;
 
-            run_functor_and_delete(internal_buffer + read_index, internal_buffer + max_size, functor);
-            run_functor_and_delete(internal_buffer, internal_buffer + count1, functor);
+            run_functor_and_delete(data() + read_index, data() + max_size(), functor);
+            run_functor_and_delete(data(), data() + count1, functor);
 
-            new_read_index -= max_size;
+            new_read_index -= max_size();
         } else {
-            run_functor_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, functor);
+            run_functor_and_delete(data() + read_index, data() + read_index + output_count, functor);
 
-            if (new_read_index == max_size)
+            if (new_read_index == max_size())
                 new_read_index = 0;
         }
 
@@ -224,67 +248,58 @@ protected:
         return output_count;
     }
 
+public:
     template <typename Functor>
-    size_t consume_all (Functor & functor, T * internal_buffer, size_t max_size)
+    bool consume_one(Functor& functor)
     {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-
-        const size_t avail = read_available(write_index, read_index, max_size);
-
-        if (avail == 0)
-            return 0;
-
-        const size_t output_count = avail;
-
-        size_t new_read_index = read_index + output_count;
-
-        if (read_index + output_count > max_size) {
-            /* copy data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = output_count - count0;
-
-            run_functor_and_delete(internal_buffer + read_index, internal_buffer + max_size, functor);
-            run_functor_and_delete(internal_buffer, internal_buffer + count1, functor);
-
-            new_read_index -= max_size;
-        } else {
-            run_functor_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, functor);
-
-            if (new_read_index == max_size)
-                new_read_index = 0;
-        }
-
-        read_index_.store(new_read_index, memory_order_release);
-        return output_count;
+        return consume_one_tmpl<Functor>(functor);
     }
 
-    size_t pop (T * output_buffer, size_t output_count, T * internal_buffer, size_t max_size)
+    template <typename Functor>
+    bool consume_one(Functor const& functor)
     {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        return consume_one_tmpl<Functor const>(functor);
+    }
 
-        const size_t avail = read_available(write_index, read_index, max_size);
+    template <typename Functor>
+    size_type consume_all (Functor& functor)
+    {
+        return consume_all_tmpl<Functor>(functor);
+    }
+
+    template <typename Functor>
+    size_type consume_all (Functor const& functor)
+    {
+        return consume_all_tmpl<Functor const>(functor);
+    }
+
+
+    size_type pop (T * output_buffer, size_type output_count)
+    {
+        const size_type write_index = write_index_.load(memory_order_acquire);
+        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+
+        const size_type avail = read_available(write_index, read_index);
 
         if (avail == 0)
             return 0;
 
         output_count = (std::min)(output_count, avail);
 
-        size_t new_read_index = read_index + output_count;
+        size_type new_read_index = read_index + output_count;
 
-        if (read_index + output_count > max_size) {
+        if (read_index + output_count > max_size()) {
             /* copy data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = output_count - count0;
+            const size_type count0 = max_size() - read_index;
+            const size_type count1 = output_count - count0;
 
-            copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
-            copy_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
+            copy_and_delete(data() + read_index, data() + max_size(), output_buffer);
+            copy_and_delete(data(), data() + count1, output_buffer + count0);
 
-            new_read_index -= max_size;
+            new_read_index -= max_size();
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer);
-            if (new_read_index == max_size)
+            copy_and_delete(data() + read_index, data() + read_index + output_count, output_buffer);
+            if (new_read_index == max_size())
                 new_read_index = 0;
         }
 
@@ -293,29 +308,29 @@ protected:
     }
 
     template <typename OutputIterator>
-    size_t pop_to_output_iterator (OutputIterator it, T * internal_buffer, size_t max_size)
+    size_type pop_to_output_iterator (OutputIterator it)
     {
-        const size_t write_index = write_index_.load(memory_order_acquire);
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        const size_type write_index = write_index_.load(memory_order_acquire);
+        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
 
-        const size_t avail = read_available(write_index, read_index, max_size);
+        const size_type avail = read_available(write_index, read_index);
         if (avail == 0)
             return 0;
 
-        size_t new_read_index = read_index + avail;
+        size_type new_read_index = read_index + avail;
 
-        if (read_index + avail > max_size) {
+        if (read_index + avail > max_size()) {
             /* copy data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = avail - count0;
+            const size_type count0 = max_size() - read_index;
+            const size_type count1 = avail - count0;
 
-            it = copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
-            copy_and_delete(internal_buffer, internal_buffer + count1, it);
+            it = copy_and_delete(data() + read_index, data() + max_size(), it);
+            copy_and_delete(data(), data() + count1, it);
 
-            new_read_index -= max_size;
+            new_read_index -= max_size();
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + avail, it);
-            if (new_read_index == max_size)
+            copy_and_delete(data() + read_index, data() + read_index + avail, it);
+            if (new_read_index == max_size())
                 new_read_index = 0;
         }
 
@@ -323,16 +338,16 @@ protected:
         return avail;
     }
 
-    const T& front(const T * internal_buffer) const
+    const T& front() const
     {
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-        return *(internal_buffer + read_index);
+        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        return *(data() + read_index);
     }
 
-    T& front(T * internal_buffer)
+    T& front()
     {
-        const size_t read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
-        return *(internal_buffer + read_index);
+        const size_type read_index = read_index_.load(memory_order_relaxed); // only written from pop thread
+        return *(data() + read_index);
     }
 #endif
 
@@ -347,9 +362,8 @@ public:
         if ( !boost::has_trivial_destructor<T>::value ) {
             // make sure to call all destructors!
 
-            T dummy_element;
-            while (pop(dummy_element))
-            {}
+            detail::consume_noop consume_functor;
+            consume_all(consume_functor);
         } else {
             write_index_.store(0, memory_order_relaxed);
             read_index_.store(0, memory_order_release);
@@ -376,7 +390,7 @@ public:
     }
 
 private:
-    bool empty(size_t write_index, size_t read_index)
+    bool empty(size_type write_index, size_type read_index)
     {
         return write_index == read_index;
     }
@@ -388,7 +402,7 @@ private:
             return std::copy(first, last, out); // will use memcpy if possible
         } else {
             for (; first != last; ++first, ++out) {
-                *out = *first;
+                *out = BOOST_LOCKFREE_MOVE_MOVE(*first);
                 first->~T();
             }
             return out;
@@ -399,7 +413,7 @@ private:
     void run_functor_and_delete( T * first, T * last, Functor & functor )
     {
         for (; first != last; ++first) {
-            functor(*first);
+            functor(BOOST_LOCKFREE_MOVE_MOVE(*first));
             first->~T();
         }
     }
@@ -408,24 +422,34 @@ private:
     void run_functor_and_delete( T * first, T * last, Functor const & functor )
     {
         for (; first != last; ++first) {
-            functor(*first);
+            functor(BOOST_LOCKFREE_MOVE_MOVE(*first));
             first->~T();
         }
     }
 };
 
-template <typename T, std::size_t MaxSize>
+template <typename T, std::size_t max_usable_size>
 class compile_time_sized_ringbuffer:
-    public ringbuffer_base<T>
+    public ringbuffer_base<compile_time_sized_ringbuffer<T, max_usable_size> >
 {
-    typedef std::size_t size_type;
-    static const std::size_t max_size = MaxSize + 1;
+    typedef ringbuffer_base<compile_time_sized_ringbuffer<T, max_usable_size> > base_type;
+    friend base_type;
 
-    typedef typename boost::aligned_storage<max_size * sizeof(T),
+private:
+    typedef typename buffer_traits<compile_time_sized_ringbuffer>::value_type value_type;
+    typedef typename buffer_traits<compile_time_sized_ringbuffer>::size_type size_type;
+    static const std::size_t max_size_ = max_usable_size + 1;
+
+    typedef typename boost::aligned_storage<max_size_ * sizeof(T),
                                             boost::alignment_of<T>::value
                                            >::type storage_type;
 
     storage_type storage_;
+
+    BOOST_STATIC_CONSTEXPR size_type max_size()
+    {
+        return max_size_;
+    }
 
     T * data()
     {
@@ -437,192 +461,95 @@ class compile_time_sized_ringbuffer:
         return static_cast<const T*>(storage_.address());
     }
 
-protected:
-    size_type max_number_of_elements() const
-    {
-        return max_size;
-    }
-
 public:
-    bool push(T const & t)
+   ~compile_time_sized_ringbuffer(void)
     {
-        return ringbuffer_base<T>::push(t, data(), max_size);
-    }
+        if ( !boost::has_trivial_destructor<T>::value ) {
+            // make sure to call all destructors!
 
-    template <typename Functor>
-    bool consume_one(Functor & f)
-    {
-        return ringbuffer_base<T>::consume_one(f, data(), max_size);
+            detail::consume_noop consume_functor;
+            this->consume_all(consume_functor);
+        }
     }
+};
 
-    template <typename Functor>
-    bool consume_one(Functor const & f)
-    {
-        return ringbuffer_base<T>::consume_one(f, data(), max_size);
-    }
-
-    template <typename Functor>
-    bool consume_all(Functor & f)
-    {
-        return ringbuffer_base<T>::consume_all(f, data(), max_size);
-    }
-
-    template <typename Functor>
-    bool consume_all(Functor const & f)
-    {
-        return ringbuffer_base<T>::consume_all(f, data(), max_size);
-    }
-
-    size_type push(T const * t, size_type size)
-    {
-        return ringbuffer_base<T>::push(t, size, data(), max_size);
-    }
-
-    template <size_type size>
-    size_type push(T const (&t)[size])
-    {
-        return push(t, size);
-    }
-
-    template <typename ConstIterator>
-    ConstIterator push(ConstIterator begin, ConstIterator end)
-    {
-        return ringbuffer_base<T>::push(begin, end, data(), max_size);
-    }
-
-    size_type pop(T * ret, size_type size)
-    {
-        return ringbuffer_base<T>::pop(ret, size, data(), max_size);
-    }
-
-    template <typename OutputIterator>
-    size_type pop_to_output_iterator(OutputIterator it)
-    {
-        return ringbuffer_base<T>::pop_to_output_iterator(it, data(), max_size);
-    }
-
-    const T& front(void) const
-    {
-        return ringbuffer_base<T>::front(data());
-    }
-
-    T& front(void)
-    {
-        return ringbuffer_base<T>::front(data());
-    }
+template <typename T, std::size_t max_usable_size>
+struct buffer_traits<compile_time_sized_ringbuffer<T, max_usable_size> >
+{
+    typedef T value_type;
+    typedef std::size_t size_type;
 };
 
 template <typename T, typename Alloc>
 class runtime_sized_ringbuffer:
-    public ringbuffer_base<T>,
+    public ringbuffer_base<runtime_sized_ringbuffer<T, Alloc> >,
     private Alloc
 {
-    typedef std::size_t size_type;
-    size_type max_elements_;
+    typedef ringbuffer_base<runtime_sized_ringbuffer<T, Alloc> > base_type;
+    friend base_type;
+
+    typedef typename buffer_traits<runtime_sized_ringbuffer>::value_type value_type;
+    typedef typename buffer_traits<runtime_sized_ringbuffer>::size_type size_type;
+
     typedef typename Alloc::pointer pointer;
+
+    size_type max_size_;
     pointer array_;
 
-protected:
-    size_type max_number_of_elements() const
+    size_type max_size() const
     {
-        return max_elements_;
+        return max_size_;
+    }
+
+    T* data()
+    {
+        return array_;
+    }
+
+    T const* data() const
+    {
+        return array_;
     }
 
 public:
-    explicit runtime_sized_ringbuffer(size_type max_elements):
-        max_elements_(max_elements + 1)
+    explicit runtime_sized_ringbuffer(size_type max_usable_size):
+        max_size_(max_usable_size + 1)
     {
-        array_ = Alloc::allocate(max_elements_);
+        array_ = Alloc::allocate(max_size_);
     }
 
     template <typename U>
-    runtime_sized_ringbuffer(typename Alloc::template rebind<U>::other const & alloc, size_type max_elements):
-        Alloc(alloc), max_elements_(max_elements + 1)
+    runtime_sized_ringbuffer(typename Alloc::template rebind<U>::other const & alloc, size_type max_usable_size):
+        Alloc(alloc), max_size_(max_usable_size + 1)
     {
-        array_ = Alloc::allocate(max_elements_);
+        array_ = Alloc::allocate(max_size_);
     }
 
-    runtime_sized_ringbuffer(Alloc const & alloc, size_type max_elements):
-        Alloc(alloc), max_elements_(max_elements + 1)
+    runtime_sized_ringbuffer(Alloc const & alloc, size_type max_usable_size):
+        Alloc(alloc), max_size_(max_usable_size + 1)
     {
-        array_ = Alloc::allocate(max_elements_);
+        array_ = Alloc::allocate(max_size_);
     }
 
     ~runtime_sized_ringbuffer(void)
     {
-        // destroy all remaining items
-        T out;
-        while (pop(&out, 1)) {}
+        if ( !boost::has_trivial_destructor<T>::value ) {
+            // make sure to call all destructors!
 
-        Alloc::deallocate(array_, max_elements_);
+            detail::consume_noop consume_functor;
+            this->consume_all(consume_functor);
+        }
+
+        Alloc::deallocate(array_, max_size_);
     }
 
-    bool push(T const & t)
-    {
-        return ringbuffer_base<T>::push(t, &*array_, max_elements_);
-    }
+};
 
-    template <typename Functor>
-    bool consume_one(Functor & f)
-    {
-        return ringbuffer_base<T>::consume_one(f, &*array_, max_elements_);
-    }
-
-    template <typename Functor>
-    bool consume_one(Functor const & f)
-    {
-        return ringbuffer_base<T>::consume_one(f, &*array_, max_elements_);
-    }
-
-    template <typename Functor>
-    size_type consume_all(Functor & f)
-    {
-        return ringbuffer_base<T>::consume_all(f, &*array_, max_elements_);
-    }
-
-    template <typename Functor>
-    size_type consume_all(Functor const & f)
-    {
-        return ringbuffer_base<T>::consume_all(f, &*array_, max_elements_);
-    }
-
-    size_type push(T const * t, size_type size)
-    {
-        return ringbuffer_base<T>::push(t, size, &*array_, max_elements_);
-    }
-
-    template <size_type size>
-    size_type push(T const (&t)[size])
-    {
-        return push(t, size);
-    }
-
-    template <typename ConstIterator>
-    ConstIterator push(ConstIterator begin, ConstIterator end)
-    {
-        return ringbuffer_base<T>::push(begin, end, array_, max_elements_);
-    }
-
-    size_type pop(T * ret, size_type size)
-    {
-        return ringbuffer_base<T>::pop(ret, size, array_, max_elements_);
-    }
-
-    template <typename OutputIterator>
-    size_type pop_to_output_iterator(OutputIterator it)
-    {
-        return ringbuffer_base<T>::pop_to_output_iterator(it, array_, max_elements_);
-    }
-
-    const T& front(void) const
-    {
-        return ringbuffer_base<T>::front(array_);
-    }
-
-    T& front(void)
-    {
-        return ringbuffer_base<T>::front(array_);
-    }
+template <typename T, typename Alloc>
+struct buffer_traits<runtime_sized_ringbuffer<T, Alloc> >
+{
+    typedef T value_type;
+    typedef typename Alloc::size_type size_type;
 };
 
 template <typename T, typename A0, typename A1>
@@ -760,6 +687,13 @@ public:
         return base_type::push(t);
     }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T&& t)
+    {
+        return base_type::push(std::move(t));
+    }
+#endif
+
     /** Pops one object from ringbuffer.
      *
      * \pre only one thread is allowed to pop data to the spsc_queue
@@ -786,7 +720,7 @@ public:
     typename boost::enable_if<typename is_convertible<T, U>::type, bool>::type
     pop (U & ret)
     {
-        detail::consume_via_copy<U> consume_functor(ret);
+        detail::consume_and_store<U> consume_functor(ret);
         return consume_one( consume_functor );
     }
 
@@ -906,7 +840,7 @@ public:
     template <typename Functor>
     size_type consume_all(Functor const & f)
     {
-        return base_type::consume_all(f);
+        return this->base_type::consume_all(f);
     }
 
     /** get number of elements that are available for read
@@ -917,7 +851,7 @@ public:
      * */
     size_type read_available() const
     {
-        return base_type::read_available(base_type::max_number_of_elements());
+        return base_type::read_available(base_type::max_size());
     }
 
     /** get write space to write elements
@@ -928,7 +862,7 @@ public:
      * */
     size_type write_available() const
     {
-        return base_type::write_available(base_type::max_number_of_elements());
+        return base_type::write_available(base_type::max_size());
     }
 
     /** get reference to element in the front of the queue
