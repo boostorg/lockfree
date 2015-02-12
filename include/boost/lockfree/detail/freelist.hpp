@@ -482,7 +482,7 @@ public:
     void destruct (T * n)
     {
         n->~T();
-        deallocate<ThreadSafe>(n - NodeStorage::nodes());
+        deallocate<ThreadSafe>(static_cast<index_t>(n - NodeStorage::nodes()));
     }
 
     bool is_lock_free(void) const
