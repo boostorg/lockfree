@@ -709,13 +709,13 @@ public:
     }
 
     template <typename U>
-    explicit spsc_queue(typename allocator::template rebind<U>::other const & alloc)
+    explicit spsc_queue(typename allocator::template rebind<U>::other const &)
     {
         // just for API compatibility: we don't actually need an allocator
         BOOST_STATIC_ASSERT(!runtime_sized);
     }
 
-    explicit spsc_queue(allocator const & alloc)
+    explicit spsc_queue(allocator const &)
     {
         // just for API compatibility: we don't actually need an allocator
         BOOST_ASSERT(!runtime_sized);
