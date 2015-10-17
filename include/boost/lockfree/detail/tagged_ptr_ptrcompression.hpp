@@ -14,7 +14,6 @@
 
 #include <boost/cstdint.hpp>
 
-#include <boost/lockfree/detail/branch_hints.hpp>
 
 namespace boost {
 namespace lockfree {

@@ -1,3 +1,8 @@
+
+// TODO: This file should no longer be required due to BOOST_LIKELY/BOOST_UNLIKELY macros; verify and remove. 
+// ref: https://svn.boost.org/trac/boost/ticket/11722
+
+
 //  branch hints
 //  Copyright (C) 2007, 2008 Tim Blechmann
 //

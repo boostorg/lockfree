@@ -18,12 +18,12 @@
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/config.hpp> // for BOOST_LIKELY
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
-#include <boost/lockfree/detail/branch_hints.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
@@ -62,7 +62,7 @@ protected:
     static size_t next_index(size_t arg, size_t max_size)
     {
         size_t ret = arg + 1;
-        while (unlikely(ret >= max_size))
+        while (BOOST_UNLIKELY(ret >= max_size))
             ret -= max_size;
         return ret;
     }
