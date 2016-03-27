@@ -98,7 +98,8 @@ protected:
         return write_available(write_index, read_index, max_size);
     }
 
-    bool push(T const & t, T * buffer, size_t max_size)
+    template<typename ... Args> 
+    bool push(T * buffer, size_t max_size, Args&&... args)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t next = next_index(write_index, max_size);
@@ -106,7 +107,7 @@ protected:
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(t); // copy-construct
+        new (buffer + write_index) T(std::forward<Args>(args)...); // construct
 
         write_index_.store(next, memory_order_release);
 
@@ -445,9 +446,11 @@ protected:
     }
 
 public:
-    bool push(T const & t)
+
+    template<typename... Args>
+    bool push(Args&&... args)
     {
-        return ringbuffer_base<T>::push(t, data(), max_size);
+        return ringbuffer_base<T>::push( data(), max_size, std::forward<Args>(args)...);
     }
 
     template <typename Functor>
@@ -558,9 +561,10 @@ public:
         Alloc::deallocate(array_, max_elements_);
     }
 
-    bool push(T const & t)
+    template<typename... Args>
+    bool push(Args&&... args)
     {
-        return ringbuffer_base<T>::push(t, &*array_, max_elements_);
+        return ringbuffer_base<T>::push( &*array_, max_elements_, std::forward<Args>(args)...);
     }
 
     template <typename Functor>
@@ -601,28 +605,28 @@ public:
     template <typename ConstIterator>
     ConstIterator push(ConstIterator begin, ConstIterator end)
     {
-        return ringbuffer_base<T>::push(begin, end, &*array_, max_elements_);
+        return ringbuffer_base<T>::push(begin, end, array_, max_elements_);
     }
 
     size_type pop(T * ret, size_type size)
     {
-        return ringbuffer_base<T>::pop(ret, size, &*array_, max_elements_);
+        return ringbuffer_base<T>::pop(ret, size, array_, max_elements_);
     }
 
     template <typename OutputIterator>
     size_type pop_to_output_iterator(OutputIterator it)
     {
-        return ringbuffer_base<T>::pop_to_output_iterator(it, &*array_, max_elements_);
+        return ringbuffer_base<T>::pop_to_output_iterator(it, array_, max_elements_);
     }
 
     const T& front(void) const
     {
-        return ringbuffer_base<T>::front(&*array_);
+        return ringbuffer_base<T>::front(array_);
     }
 
     T& front(void)
     {
-        return ringbuffer_base<T>::front(&*array_);
+        return ringbuffer_base<T>::front(array_);
     }
 };
 
@@ -756,9 +760,12 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    bool push(T const & t)
+
+    template<typename... Args>
+    typename std::enable_if< std::is_constructible<T, Args...>::value, bool>::type
+    push(Args&&... args)
     {
-        return base_type::push(t);
+        return base_type::push(std::forward<Args>(args)...);
     }
 
     /** Pops one object from ringbuffer.
