@@ -22,6 +22,7 @@
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_copy_constructible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -762,7 +763,7 @@ public:
      * */
 
     template<typename... Args>
-    typename std::enable_if< std::is_constructible<T, Args...>::value, bool>::type
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
     push(Args&&... args)
     {
         return base_type::push(std::forward<Args>(args)...);
