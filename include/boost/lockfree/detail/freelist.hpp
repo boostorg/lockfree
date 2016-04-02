@@ -340,7 +340,7 @@ struct compiletime_sized_freelist_storage
 
     T * nodes(void) const
     {
-        char * data_pointer = const_cast<char*>(data.data());	
+        char * data_pointer = const_cast<char*>(data.data());
         return reinterpret_cast<T*>( boost::alignment::align_up( data_pointer, BOOST_LOCKFREE_CACHELINE_BYTES ) );
     }
 
