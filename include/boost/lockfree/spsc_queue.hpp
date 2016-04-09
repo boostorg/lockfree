@@ -18,7 +18,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
+#include <boost/config.hpp> // for BOOST_LIKELY and BOOST_HAS_RVALUE_REFS
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
@@ -99,8 +99,7 @@ protected:
         return write_available(write_index, read_index, max_size);
     }
 
-    template<typename ... Args> 
-    bool push(T * buffer, size_t max_size, Args&&... args)
+    bool push(T const & t, T * buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t next = next_index(write_index, max_size);
@@ -108,12 +107,48 @@ protected:
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(std::forward<Args>(args)...); // construct
+        new (buffer + write_index) T(t); // copy-construct
 
         write_index_.store(next, memory_order_release);
 
         return true;
     }
+#ifdef BOOST_HAS_RVALUE_REFS
+
+    bool push(T&& t, T * buffer, size_t max_size)
+    {
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t next = next_index(write_index, max_size);
+
+        if (next == read_index_.load(memory_order_acquire))
+            return false; /* ringbuffer is full */
+
+        new (buffer + write_index) T(std::move(t)); // move-construct
+
+        write_index_.store(next, memory_order_release);
+
+        return true;
+    }
+
+
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(T * buffer, size_t max_size, Args&&... args )
+    {
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t next = next_index(write_index, max_size);
+
+        if (next == read_index_.load(memory_order_acquire))
+            return false; /* ringbuffer is full */
+
+        new (buffer + write_index) T(std::forward<Args>(args)...); // emplace
+
+        write_index_.store(next, memory_order_release);
+
+        return true;
+    }
+
+#endif
 
     size_t push(const T * input_buffer, size_t input_count, T * internal_buffer, size_t max_size)
     {
@@ -447,12 +482,26 @@ protected:
     }
 
 public:
+    bool push(T const & t)
+    {
+        return ringbuffer_base<T>::push(t, data(), max_size);
+    }
+
+#ifdef BOOST_HAS_RVALUE_REFS
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), data(), max_size);
+    }
+
 
     template<typename... Args>
-    bool push(Args&&... args)
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(Args&&... args)
     {
-        return ringbuffer_base<T>::push( data(), max_size, std::forward<Args>(args)...);
+        return ringbuffer_base<T>::emplace(data(), max_size, std::forward<Args>(args)...);
     }
+
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -562,11 +611,27 @@ public:
         Alloc::deallocate(array_, max_elements_);
     }
 
-    template<typename... Args>
-    bool push(Args&&... args)
+    bool push(T const & t)
     {
-        return ringbuffer_base<T>::push( &*array_, max_elements_, std::forward<Args>(args)...);
+        return ringbuffer_base<T>::push(t, &*array_, max_elements_);
     }
+#ifdef BOOST_HAS_RVALUE_REFS
+
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), &*array_, max_elements_);
+    }
+
+
+
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(Args&&... args)
+    {
+        return ringbuffer_base<T>::emplace(&*array_, max_elements_, std::forward<Args>(args)...);
+    }
+
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -761,13 +826,45 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
+    bool push(T const & t)
+    {
+        return base_type::push(t);
+    }
+
+    
+#ifdef BOOST_HAS_RVALUE_REFS
+
+    /** Pushes object t to the ringbuffer via move construction/
+     *
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \post object will be pushed to the spsc_queue, unless it is full.
+     * \return true, if the push operation is successful.
+     *
+     * \note Thread-safe and wait-free
+     * */
+
+    bool push(T&& t)
+    {
+        return base_type::push(std::move(t));
+    }
+
+    /** Emplaces an instance of T to the ringbuffer via direct initialization using the given constructor arguments
+     *  
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \post object will be pushed to the spsc_queue, unless it is full.
+     * \return true, if the push operation is successful.
+     *
+     * \note Thread-safe and wait-free
+     * */
 
     template<typename... Args>
     typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
-    push(Args&&... args)
+    emplace(Args&&... args)
     {
-        return base_type::push(std::forward<Args>(args)...);
+        return  base_type::emplace(std::forward<Args>(args)...);
     }
+
+#endif
 
     /** Pops one object from ringbuffer.
      *
