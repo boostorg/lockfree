@@ -15,7 +15,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
+#include <boost/config.hpp> // for BOOST_LIKELY & BOOST_ALIGNMENT
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -99,7 +99,7 @@ private:
     static const bool node_based = !(has_capacity || fixed_sized);
     static const bool compile_time_sized = has_capacity;
 
-    struct BOOST_LOCKFREE_CACHELINE_ALIGNMENT node
+    struct BOOST_ALIGNMENT(BOOST_LOCKFREE_CACHELINE_BYTES) node
     {
         typedef typename detail::select_tagged_handle<node, node_based>::tagged_handle_type tagged_node_handle;
         typedef typename detail::select_tagged_handle<node, node_based>::handle_type handle_type;

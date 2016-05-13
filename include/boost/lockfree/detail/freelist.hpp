@@ -254,7 +254,9 @@ private:
     atomic<tagged_node_ptr> pool_;
 };
 
-class tagged_index
+class
+BOOST_ALIGNMENT( 2*sizeof(boost::uint16_t) ) // workaround for bugs in MSVC
+tagged_index
 {
 public:
     typedef boost::uint16_t tag_t;
