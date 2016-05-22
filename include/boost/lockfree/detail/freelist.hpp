@@ -255,7 +255,7 @@ private:
 };
 
 class
-BOOST_ALIGNMENT( 2*sizeof(boost::uint16_t) ) // workaround for bugs in MSVC
+BOOST_ALIGNMENT( sizeof(boost::uint32_t) ) // workaround for bugs in MSVC
 tagged_index
 {
 public:
