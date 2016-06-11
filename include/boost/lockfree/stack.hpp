@@ -9,6 +9,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/checked_delete.hpp>
+#include <boost/core/no_exceptions_support.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -253,7 +254,7 @@ private:
         node * new_top_node = end_node;
         end_node->next = NULL;
 
-        try {
+        BOOST_TRY {
             /* link nodes */
             for (; it != end; ++it) {
                 node * newnode = pool.template construct<Threadsafe, Bounded>(*it);
@@ -262,14 +263,16 @@ private:
                 newnode->next = new_top_node;
                 new_top_node = newnode;
             }
-        } catch (...) {
+        } BOOST_CATCH (...) {
             for (node * current_node = new_top_node; current_node != NULL;) {
                 node * next = current_node->next;
                 pool.template destruct<Threadsafe>(current_node);
                 current_node = next;
             }
-            throw;
+            BOOST_RETHROW;
         }
+        BOOST_CATCH_END
+
         ret = it;
         return make_tuple(new_top_node, end_node);
     }
