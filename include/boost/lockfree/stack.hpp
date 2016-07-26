@@ -675,7 +675,7 @@ public:
             node * node_pointer = pool.get_pointer(nodes_to_consume);
             node * next_node    = pool.get_pointer(node_pointer->next);
 
-            node_pointer->next  = last_node_pointer;
+            node_pointer->next  = pool.get_handle(last_node_pointer);
             last_node_pointer   = node_pointer;
 
             if (!next_node) {
@@ -733,7 +733,7 @@ public:
             node * node_pointer = pool.get_pointer(nodes_to_consume);
             node * next_node    = pool.get_pointer(node_pointer->next);
 
-            node_pointer->next  = last_node_pointer;
+            node_pointer->next  = pool.get_handle(last_node_pointer);
             last_node_pointer   = node_pointer;
 
             if (!next_node) {
