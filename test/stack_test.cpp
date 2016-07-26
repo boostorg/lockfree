@@ -173,9 +173,33 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_test )
     f.push(3);
 
 #ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all(dummy_functor());
+    size_t consumed = f.consume_all_atomic(dummy_functor());
 #else
     size_t consumed = f.consume_all_atomic([] (int i) {
+    });
+#endif
+
+    BOOST_REQUIRE_EQUAL(consumed, 3u);
+
+    BOOST_REQUIRE(f.empty());
+}
+
+
+BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_reversed_test )
+{
+    boost::lockfree::stack<int> f(64);
+
+    BOOST_WARN(f.is_lock_free());
+    BOOST_REQUIRE(f.empty());
+
+    f.push(1);
+    f.push(2);
+    f.push(3);
+
+#ifdef BOOST_NO_CXX11_LAMBDAS
+    size_t consumed = f.consume_all_atomic_reversed(dummy_functor());
+#else
+    size_t consumed = f.consume_all_atomic_reversed([] (int i) {
     });
 #endif
 

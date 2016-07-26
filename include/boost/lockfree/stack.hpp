@@ -643,12 +643,128 @@ public:
         return element_count;
     }
 
+    /** consumes all elements via a functor
+     *
+     * atomically pops all elements from the stack and applies the functor on each object in reversed order
+     *
+     * \returns number of elements that are consumed
+     *
+     * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
+     * */
+    template <typename Functor>
+    size_t consume_all_atomic_reversed(Functor & f)
+    {
+        size_t element_count = 0;
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
+
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return 0;
+
+            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos))
+                break;
+        }
+
+        tagged_node_handle nodes_to_consume = old_tos;
+
+        node * last_node_pointer = NULL;
+        tagged_node_handle nodes_in_reversed_order;
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_to_consume);
+            node * next_node    = pool.get_pointer(node_pointer->next);
+
+            node_pointer->next  = last_node_pointer;
+            last_node_pointer   = node_pointer;
+
+            if (!next_node) {
+                nodes_in_reversed_order = nodes_to_consume;
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_to_consume.get_next_tag());
             nodes_to_consume = next;
+        }
+
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_in_reversed_order);
+            f(node_pointer->v);
+            element_count += 1;
+
+            node * next_node = pool.get_pointer(node_pointer->next);
+
+            if (!next_node) {
+                pool.template destruct<true>(nodes_in_reversed_order);
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_in_reversed_order.get_next_tag());
+            pool.template destruct<true>(nodes_in_reversed_order);
+            nodes_in_reversed_order = next;
         }
 
         return element_count;
     }
 
+    /// \copydoc boost::lockfree::stack::consume_all_atomic_reversed(Functor & rhs)
+    template <typename Functor>
+    size_t consume_all_atomic_reversed(Functor const & f)
+    {
+        size_t element_count = 0;
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
+
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return 0;
+
+            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos))
+                break;
+        }
+
+        tagged_node_handle nodes_to_consume = old_tos;
+
+        node * last_node_pointer = NULL;
+        tagged_node_handle nodes_in_reversed_order;
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_to_consume);
+            node * next_node    = pool.get_pointer(node_pointer->next);
+
+            node_pointer->next  = last_node_pointer;
+            last_node_pointer   = node_pointer;
+
+            if (!next_node) {
+                nodes_in_reversed_order = nodes_to_consume;
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_to_consume.get_next_tag());
+            nodes_to_consume = next;
+        }
+
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_in_reversed_order);
+            f(node_pointer->v);
+            element_count += 1;
+
+            node * next_node = pool.get_pointer(node_pointer->next);
+
+            if (!next_node) {
+                pool.template destruct<true>(nodes_in_reversed_order);
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_in_reversed_order.get_next_tag());
+            pool.template destruct<true>(nodes_in_reversed_order);
+            nodes_in_reversed_order = next;
+        }
+
+        return element_count;
+    }
     /**
      * \return true, if stack is empty.
      *
