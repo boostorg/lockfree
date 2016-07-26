@@ -574,7 +574,7 @@ public:
             if (!old_tos_pointer)
                 return 0;
 
-            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+            tagged_node_handle new_tos(typename pool_t::index_t(NULL), old_tos.get_next_tag());
 
             if (tos.compare_exchange_weak(old_tos, new_tos))
                 break;
@@ -614,7 +614,7 @@ public:
             if (!old_tos_pointer)
                 return 0;
 
-            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+            tagged_node_handle new_tos(typename pool_t::index_t(NULL), old_tos.get_next_tag());
 
             if (tos.compare_exchange_weak(old_tos, new_tos))
                 break;
@@ -661,7 +661,7 @@ public:
             if (!old_tos_pointer)
                 return 0;
 
-            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+            tagged_node_handle new_tos(typename pool_t::index_t(NULL), old_tos.get_next_tag());
 
             if (tos.compare_exchange_weak(old_tos, new_tos))
                 break;
@@ -719,7 +719,7 @@ public:
             if (!old_tos_pointer)
                 return 0;
 
-            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+            tagged_node_handle new_tos(typename pool_t::index_t(NULL), old_tos.get_next_tag());
 
             if (tos.compare_exchange_weak(old_tos, new_tos))
                 break;
