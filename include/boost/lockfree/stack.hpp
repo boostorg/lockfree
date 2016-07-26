@@ -13,8 +13,7 @@
 #include <boost/integer_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
+#include <boost/type_traits/is_copy_constructible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -71,8 +70,7 @@ class stack
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    BOOST_STATIC_ASSERT(boost::has_trivial_assign<T>::value);
-    BOOST_STATIC_ASSERT(boost::has_trivial_destructor<T>::value);
+    BOOST_STATIC_ASSERT(boost::is_copy_constructible<T>::value);
 
     typedef typename detail::stack_signature::bind<A0, A1, A2>::type bound_args;
 
