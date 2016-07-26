@@ -556,6 +556,99 @@ public:
         return element_count;
     }
 
+    /** consumes all elements via a functor
+     *
+     * atomically pops all elements from the stack and applies the functor on each object
+     *
+     * \returns number of elements that are consumed
+     *
+     * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
+     * */
+    template <typename Functor>
+    size_t consume_all_atomic(Functor & f)
+    {
+        size_t element_count = 0;
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
+
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return 0;
+
+            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos))
+                break;
+        }
+
+        tagged_node_handle nodes_to_consume = old_tos;
+
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_to_consume);
+            f(node_pointer->v);
+            element_count += 1;
+
+            node * next_node = pool.get_pointer(node_pointer->next);
+
+            if (!next_node) {
+                pool.template destruct<true>(nodes_to_consume);
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_to_consume.get_next_tag());
+            pool.template destruct<true>(nodes_to_consume);
+            nodes_to_consume = next;
+        }
+
+        return element_count;
+    }
+
+    /// \copydoc boost::lockfree::stack::consume_all_atomic(Functor & rhs)
+    template <typename Functor>
+    size_t consume_all_atomic(Functor const & f)
+    {
+        size_t element_count = 0;
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
+
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return 0;
+
+            tagged_node_handle new_tos(NULL, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos))
+                break;
+        }
+
+        tagged_node_handle nodes_to_consume = old_tos;
+
+        for(;;) {
+            node * node_pointer = pool.get_pointer(nodes_to_consume);
+            f(node_pointer->v);
+            element_count += 1;
+
+            node * next_node = pool.get_pointer(node_pointer->next);
+
+            if (!next_node) {
+                pool.template destruct<true>(nodes_to_consume);
+                break;
+            }
+
+            tagged_node_handle next(pool.get_handle(next_node), nodes_to_consume.get_next_tag());
+            pool.template destruct<true>(nodes_to_consume);
+            nodes_to_consume = next;
+        }
+
+        return element_count;
+    }
+
+            nodes_to_consume = next;
+        }
+
+        return element_count;
+    }
+
     /**
      * \return true, if stack is empty.
      *
