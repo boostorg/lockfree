@@ -10,6 +10,11 @@
 #define BOOST_LOCKFREE_DETAIL_PARAMETER_HPP
 
 #include <boost/lockfree/policies.hpp>
+#include <boost/parameter/parameters.hpp>
+#include <boost/parameter/binding.hpp>
+
+#include <boost/mpl/void.hpp>
+
 
 namespace boost {
 namespace lockfree {
