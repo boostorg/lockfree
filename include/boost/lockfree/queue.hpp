@@ -72,10 +72,10 @@ typedef parameter::parameters<boost::parameter::optional<tag::allocator>,
  *   - T must have a trivial destructor
  *
  * */
-#ifndef BOOST_DOXYGEN_INVOKED
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
 template <typename T, class A0, class A1, class A2>
 #else
-template <typename T, ...Options>
+template <typename T, typename ...Options>
 #endif
 class queue
 {
@@ -90,7 +90,11 @@ private:
     BOOST_STATIC_ASSERT((boost::has_trivial_assign<T>::value));
 #endif
 
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     typedef typename detail::queue_signature::bind<A0, A1, A2>::type bound_args;
+#else
+    typedef typename detail::queue_signature::bind<Options...>::type bound_args;
+#endif
 
     static const bool has_capacity = detail::extract_capacity<bound_args>::has_capacity;
     static const size_t capacity = detail::extract_capacity<bound_args>::capacity + 1; // the queue uses one dummy node

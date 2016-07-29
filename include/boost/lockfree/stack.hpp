@@ -60,10 +60,10 @@ typedef parameter::parameters<boost::parameter::optional<tag::allocator>,
  *  \b Requirements:
  *  - T must have a copy constructor
  * */
-#ifndef BOOST_DOXYGEN_INVOKED
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
 template <typename T, class A0, class A1, class A2>
 #else
-template <typename T, ...Options>
+template <typename T, typename ...Options>
 #endif
 class stack
 {
@@ -71,7 +71,11 @@ private:
 #ifndef BOOST_DOXYGEN_INVOKED
     BOOST_STATIC_ASSERT(boost::is_copy_constructible<T>::value);
 
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     typedef typename detail::stack_signature::bind<A0, A1, A2>::type bound_args;
+#else
+    typedef typename detail::stack_signature::bind<Options...>::type bound_args;
+#endif
 
     static const bool has_capacity = detail::extract_capacity<bound_args>::has_capacity;
     static const size_t capacity = detail::extract_capacity<bound_args>::capacity;
