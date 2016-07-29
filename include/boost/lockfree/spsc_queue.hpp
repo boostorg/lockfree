@@ -28,6 +28,8 @@
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 
+#include <boost/lockfree/lockfree_forward.hpp>
+
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #pragma once
 #endif
@@ -670,9 +672,7 @@ struct make_ringbuffer
  *  - T must be copyable
  * */
 #ifndef BOOST_DOXYGEN_INVOKED
-template <typename T,
-          class A0 = boost::parameter::void_,
-          class A1 = boost::parameter::void_>
+template <typename T, class A0, class A1>
 #else
 template <typename T, ...Options>
 #endif

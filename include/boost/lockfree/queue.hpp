@@ -23,6 +23,8 @@
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 
+#include <boost/lockfree/lockfree_forward.hpp>
+
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #pragma once
 #endif
@@ -71,10 +73,7 @@ typedef parameter::parameters<boost::parameter::optional<tag::allocator>,
  *
  * */
 #ifndef BOOST_DOXYGEN_INVOKED
-template <typename T,
-          class A0 = boost::parameter::void_,
-          class A1 = boost::parameter::void_,
-          class A2 = boost::parameter::void_>
+template <typename T, class A0, class A1, class A2>
 #else
 template <typename T, ...Options>
 #endif
