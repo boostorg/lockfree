@@ -98,7 +98,24 @@ protected:
         return write_available(write_index, read_index, max_size);
     }
 
-    bool push(T const & t, T * buffer, size_t max_size)
+    bool push( T && t, T * buffer, size_t max_size )
+    {
+        const size_t write_index = write_index_.load( memory_order_relaxed );  // only written from push thread
+        const size_t next = next_index( write_index, max_size );
+
+        if( next == read_index_.load( memory_order_acquire ) )
+            return false; /* ringbuffer is full */
+
+        new (buffer + write_index) T(std::move(t)); // move-construct
+
+        write_index_.store( next, memory_order_release );
+
+        return true;
+    }
+
+    template<typename T>
+    typename std::enable_if< std::is_copy_constructible<T>::value, bool >::type
+    push(T const & t, T * buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t next = next_index(write_index, max_size);
@@ -382,18 +399,23 @@ private:
         return write_index == read_index;
     }
 
-    template< class OutputIterator >
-    OutputIterator copy_and_delete( T * first, T * last, OutputIterator out )
+    template< class OutputIterator>
+    typename std::enable_if< boost::has_trivial_destructor<T>::value, OutputIterator >::type
+    copy_and_delete( T * first, T * last, OutputIterator out )
     {
-        if (boost::has_trivial_destructor<T>::value) {
-            return std::copy(first, last, out); // will use memcpy if possible
-        } else {
-            for (; first != last; ++first, ++out) {
-                *out = *first;
-                first->~T();
-            }
-            return out;
+        return std::copy(first, last, out); // will use memcpy if possible
+    }
+
+
+    template<class OutputIterator>
+    typename std::enable_if< ! boost::has_trivial_destructor<T>::value, OutputIterator >::type
+        copy_and_delete( T * first, T * last, OutputIterator out )
+    {
+        for (; first != last; ++first, ++out) {
+            *out = std::move(*first);
+            first->~T();
         }
+        return out;
     }
 
     template< class Functor >
@@ -445,9 +467,16 @@ protected:
     }
 
 public:
+
+    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
     bool push(T const & t)
     {
         return ringbuffer_base<T>::push(t, data(), max_size);
+    }
+
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), data(), max_size);
     }
 
     template <typename Functor>
@@ -558,9 +587,16 @@ public:
         Alloc::deallocate(array_, max_elements_);
     }
 
-    bool push(T const & t)
+    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
+    bool
+    push(T const & t)
     {
         return ringbuffer_base<T>::push(t, &*array_, max_elements_);
+    }
+
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), &*array_, max_elements_);
     }
 
     template <typename Functor>
@@ -756,9 +792,23 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    bool push(T const & t)
+    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
+	bool push(T const & t)
     {
         return base_type::push(t);
+    }
+
+    /** Pushes object t to the ringbuffer.
+     *
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \post object will be pushed to the spsc_queue, unless it is full.
+     * \return true, if the push operation is successful.
+     *
+     * \note Thread-safe and wait-free
+     * */
+    bool push( T && t )
+    {
+        return base_type::push( std::move( t ) );
     }
 
     /** Pops one object from ringbuffer.
