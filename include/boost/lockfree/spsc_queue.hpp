@@ -18,7 +18,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY and BOOST_HAS_RVALUE_REFS
+#include <boost/config.hpp> // for BOOST_LIKELY, BOOST_NO_CXX11_RVALUE_REFERENCES, and BOOST_NO_CXX11_VARIADIC_TEMPLATES
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
@@ -113,7 +113,7 @@ protected:
 
         return true;
     }
-#ifdef BOOST_HAS_RVALUE_REFS
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
     bool push(T&& t, T * buffer, size_t max_size)
     {
@@ -130,7 +130,7 @@ protected:
         return true;
     }
 
-
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     template<typename... Args>
     typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
     emplace(T * buffer, size_t max_size, Args&&... args )
@@ -141,12 +141,13 @@ protected:
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(std::forward<Args>(args)...); // emplace
+        new (buffer + write_index) T{std::forward<Args>(args)...}; // emplace
 
         write_index_.store(next, memory_order_release);
 
         return true;
     }
+#endif
 
 #endif
 
@@ -487,19 +488,20 @@ public:
         return ringbuffer_base<T>::push(t, data(), max_size);
     }
 
-#ifdef BOOST_HAS_RVALUE_REFS
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     bool push(T&& t)
     {
         return ringbuffer_base<T>::push(std::move(t), data(), max_size);
     }
 
-
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     template<typename... Args>
     typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
     emplace(Args&&... args)
     {
         return ringbuffer_base<T>::emplace(data(), max_size, std::forward<Args>(args)...);
     }
+#endif
 
 #endif
 
@@ -615,21 +617,21 @@ public:
     {
         return ringbuffer_base<T>::push(t, &*array_, max_elements_);
     }
-#ifdef BOOST_HAS_RVALUE_REFS
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
     bool push(T&& t)
     {
         return ringbuffer_base<T>::push(std::move(t), &*array_, max_elements_);
     }
 
-
-
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     template<typename... Args>
     typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
     emplace(Args&&... args)
     {
         return ringbuffer_base<T>::emplace(&*array_, max_elements_, std::forward<Args>(args)...);
     }
+#endif
 
 #endif
 
@@ -831,8 +833,7 @@ public:
         return base_type::push(t);
     }
 
-    
-#ifdef BOOST_HAS_RVALUE_REFS
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
     /** Pushes object t to the ringbuffer via move construction/
      *
@@ -848,6 +849,7 @@ public:
         return base_type::push(std::move(t));
     }
 
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     /** Emplaces an instance of T to the ringbuffer via direct initialization using the given constructor arguments
      *  
      * \pre only one thread is allowed to push data to the spsc_queue
@@ -856,13 +858,13 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-
     template<typename... Args>
     typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
     emplace(Args&&... args)
     {
         return  base_type::emplace(std::forward<Args>(args)...);
     }
+#endif
 
 #endif
 
