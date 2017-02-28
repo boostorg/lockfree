@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
@@ -123,7 +124,7 @@ protected:
         if (next == read_index_.load(memory_order_acquire))
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(std::move(t)); // move-construct
+        new (buffer + write_index) T(std::move_if_noexcept(t)); // move-construct
 
         write_index_.store(next, memory_order_release);
 
@@ -317,12 +318,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = output_count - count0;
 
-            copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
-            copy_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
+            move_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
+            move_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer);
+            move_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer);
             if (new_read_index == max_size)
                 new_read_index = 0;
         }
@@ -348,12 +349,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = avail - count0;
 
-            it = copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
-            copy_and_delete(internal_buffer, internal_buffer + count1, it);
+            it = move_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
+            move_and_delete(internal_buffer, internal_buffer + count1, it);
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + avail, it);
+            move_and_delete(internal_buffer + read_index, internal_buffer + read_index + avail, it);
             if (new_read_index == max_size)
                 new_read_index = 0;
         }
@@ -420,8 +421,28 @@ private:
         return write_index == read_index;
     }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     template< class OutputIterator >
-    OutputIterator copy_and_delete( T * first, T * last, OutputIterator out )
+    typename boost::enable_if< typename boost::is_constructible<T, T>::type, OutputIterator>::type
+    move_and_delete( T * first, T * last, OutputIterator out )
+    {
+        if (boost::has_trivial_destructor<T>::value) {
+            return std::move(first, last, out); // will use memcpy if possible
+        } else {
+            for (; first != last; ++first, ++out) {
+                *out = std::move(*first);
+                first->~T();
+            }
+            return out;
+        }
+    }
+#endif
+
+    template< class OutputIterator >
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    typename boost::disable_if< typename boost::is_constructible<T, T>::type, OutputIterator>::type
+#endif
+    move_and_delete( T * first, T * last, OutputIterator out )
     {
         if (boost::has_trivial_destructor<T>::value) {
             return std::copy(first, last, out); // will use memcpy if possible
