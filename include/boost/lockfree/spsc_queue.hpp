@@ -441,6 +441,8 @@ private:
     template< class OutputIterator >
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     typename boost::disable_if< typename boost::is_constructible<T, T>::type, OutputIterator>::type
+#else
+    OutputIterator
 #endif
     move_and_delete( T * first, T * last, OutputIterator out )
     {
@@ -1092,8 +1094,7 @@ public:
         if ( !boost::has_trivial_destructor<T>::value ) {
             // make sure to call all destructors!
 
-            T dummy_element;
-            while (pop(dummy_element))
+            while (pop())
             {}
         } else {
             base_type::write_index_.store(0, memory_order_relaxed);
