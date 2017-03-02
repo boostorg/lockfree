@@ -35,6 +35,14 @@
 #pragma warning(disable: 4324) // structure was padded due to __declspec(align())
 #endif
 
+#if defined(BOOST_INTEL) && (BOOST_INTEL_CXX_VERSION > 1000)
+#pragma warning(push)
+#pragma warning(disable:488) // template parameter unused in declaring parameter types, 
+                             // gets erronously triggered the queue constructor which
+                             // takes an allocator of another type and rebinds it
+#endif
+
+
 
 namespace boost    {
 namespace lockfree {
@@ -543,6 +551,10 @@ private:
 
 } /* namespace lockfree */
 } /* namespace boost */
+
+#if defined(BOOST_INTEL) && (BOOST_INTEL_CXX_VERSION > 1000)
+#pragma warning(pop)
+#endif
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
