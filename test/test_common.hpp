@@ -5,6 +5,7 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <cassert>
+#include <iostream>
 #include "test_helpers.hpp"
 
 #include <boost/array.hpp>
