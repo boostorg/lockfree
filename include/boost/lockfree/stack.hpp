@@ -245,6 +245,11 @@ private:
     template <bool Threadsafe, bool Bounded, typename ConstIterator>
     tuple<node*, node*> prepare_node_list(ConstIterator begin, ConstIterator end, ConstIterator & ret)
     {
+        if (begin == end) {
+            ret = begin;
+            return make_tuple<node*, node*>(NULL, NULL);
+        }
+        
         ConstIterator it = begin;
         node * end_node = pool.template construct<Threadsafe, Bounded>(*it++);
         if (end_node == NULL) {
