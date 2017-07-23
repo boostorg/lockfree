@@ -33,7 +33,7 @@ struct move_convertible
 struct move_constructible_and_assignable
 {
     template <typename T, typename U>
-    static void ^move(T & t, U & u)
+    static void move(T & t, U & u)
     {
         u = U(std::move(t));
     }
@@ -53,7 +53,7 @@ template <typename T>
 struct consume_via_move
 {
     consume_via_move(T & out):
-        out_(std::move(out))
+        out_(out)
     {}
 
     template <typename U>
