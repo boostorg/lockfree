@@ -12,19 +12,21 @@
 
 #include <algorithm>
 #include <memory>
+#include <type_traits>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
+#include <boost/config.hpp> // for BOOST_LIKELY
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
+#include <boost/lockfree/detail/move_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 
@@ -825,21 +827,33 @@ public:
         return consume_one( consume_functor );
     }
 
-    /** Pops one object from ringbuffer.
+    /** Pops one object from ringbuffer. If it is move assignable it will be moved, 
+     *  otherwise it will be copied.
      *
      * \pre only one thread is allowed to pop data to the spsc_queue
-     * \post if ringbuffer is not empty, object will be copied to ret.
+     * \post if ringbuffer is not empty, object will be assigned to ret. 
      * \return true, if the pop operation is successful, false if ringbuffer was empty.
      *
      * \note Thread-safe and wait-free
      */
     template <typename U>
-    typename boost::enable_if<typename is_convertible<T, U>::type, bool>::type
-    pop (U & ret)
+    typename boost::enable_if<typename integral_constant<bool, 
+        is_convertible<T, U>::value && !std::is_move_assignable<T>::value>::type, bool>::type
+    pop ( U & ret)
     {
         detail::consume_via_copy<U> consume_functor(ret);
         return consume_one( consume_functor );
     }
+
+    template <typename U>
+    typename boost::enable_if<typename integral_constant<bool, 
+        is_convertible<T, U>::value && std::is_move_assignable<T>::value>::type, bool>::type
+     pop ( U & ret )
+    {
+       detail::consume_via_move<U> consume_functor( ret );
+       return consume_one( consume_functor );
+    }
+   
 
     /** Pushes as many objects from the array t as there is space.
      *
