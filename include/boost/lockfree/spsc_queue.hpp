@@ -524,7 +524,12 @@ class runtime_sized_ringbuffer:
 {
     typedef std::size_t size_type;
     size_type max_elements_;
+#ifdef BOOST_NO_CXX11_ALLOCATOR
     typedef typename Alloc::pointer pointer;
+#else
+    typedef std::allocator_traits<Alloc> allocator_traits;
+    typedef typename allocator_traits::pointer pointer;
+#endif
     pointer array_;
 
 protected:
@@ -537,20 +542,35 @@ public:
     explicit runtime_sized_ringbuffer(size_type max_elements):
         max_elements_(max_elements + 1)
     {
+#ifdef BOOST_NO_CXX11_ALLOCATOR
         array_ = Alloc::allocate(max_elements_);
+#else
+        Alloc& alloc = *this;
+        array_ = allocator_traits::allocate(alloc, max_elements_);
+#endif
     }
 
     template <typename U>
     runtime_sized_ringbuffer(typename detail::allocator_rebind_helper<Alloc, U>::type const & alloc, size_type max_elements):
         Alloc(alloc), max_elements_(max_elements + 1)
     {
+#ifdef BOOST_NO_CXX11_ALLOCATOR
         array_ = Alloc::allocate(max_elements_);
+#else
+        Alloc& alloc = *this;
+        array_ = allocator_traits::allocate(alloc, max_elements_);
+#endif
     }
 
     runtime_sized_ringbuffer(Alloc const & alloc, size_type max_elements):
         Alloc(alloc), max_elements_(max_elements + 1)
     {
+#ifdef BOOST_NO_CXX11_ALLOCATOR
         array_ = Alloc::allocate(max_elements_);
+#else
+        Alloc& alloc = *this;
+        array_ = allocator_traits::allocate(alloc, max_elements_);
+#endif
     }
 
     ~runtime_sized_ringbuffer(void)
@@ -559,7 +579,12 @@ public:
         T out;
         while (pop(&out, 1)) {}
 
+#ifdef BOOST_NO_CXX11_ALLOCATOR
         Alloc::deallocate(array_, max_elements_);
+#else
+        Alloc& alloc = *this;
+        allocator_traits::deallocate(alloc, array_, max_elements_);
+#endif
     }
 
     bool push(T const & t)
