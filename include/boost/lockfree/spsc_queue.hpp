@@ -24,6 +24,7 @@
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
+#include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
@@ -540,7 +541,7 @@ public:
     }
 
     template <typename U>
-    runtime_sized_ringbuffer(typename Alloc::template rebind<U>::other const & alloc, size_type max_elements):
+    runtime_sized_ringbuffer(typename detail::allocator_rebind_helper<Alloc, U>::type const & alloc, size_type max_elements):
         Alloc(alloc), max_elements_(max_elements + 1)
     {
         array_ = Alloc::allocate(max_elements_);
@@ -730,7 +731,7 @@ public:
     }
 
     template <typename U>
-    explicit spsc_queue(typename allocator::template rebind<U>::other const &)
+    explicit spsc_queue(typename detail::allocator_rebind_helper<allocator, U>::type const &)
     {
         // just for API compatibility: we don't actually need an allocator
         BOOST_STATIC_ASSERT(!runtime_sized);
@@ -756,7 +757,7 @@ public:
     }
 
     template <typename U>
-    spsc_queue(size_type element_count, typename allocator::template rebind<U>::other const & alloc):
+    spsc_queue(size_type element_count, typename detail::allocator_rebind_helper<allocator, U>::type const & alloc):
         base_type(alloc, element_count)
     {
         BOOST_STATIC_ASSERT(runtime_sized);
