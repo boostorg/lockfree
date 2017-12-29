@@ -12,7 +12,9 @@
 
 #include <algorithm>
 #include <memory>
-#include <type_traits>
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+#include <type_traits> // for is_move_assignable
+#endif
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
