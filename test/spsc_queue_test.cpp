@@ -406,6 +406,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_reset_test )
     BOOST_REQUIRE(f.empty());
 }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
 BOOST_AUTO_TEST_CASE( spsc_queue_unique_ptr_push_pop_test )
 {
@@ -433,3 +434,4 @@ BOOST_AUTO_TEST_CASE( spsc_queue_unique_ptr_push_pop_test )
     BOOST_REQUIRE(f.empty());
 }
 
+#endif

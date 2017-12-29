@@ -23,10 +23,13 @@
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_copy_constructible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 #include <boost/lockfree/detail/move_payload.hpp>
+#endif
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 
@@ -37,6 +40,20 @@
 namespace boost    {
 namespace lockfree {
 namespace detail   {
+
+  // there does not seem to be a coresponding boost trait, 
+  // so for C++98, C++03 compatibility we roll our own falling back on std::
+  template<class T>
+  struct is_move_assignable
+  {
+    static const bool value =
+#ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
+      false;
+#else
+      std::is_move_assignable<T>::value;
+#endif
+  };
+
 
 typedef parameter::parameters<boost::parameter::optional<tag::capacity>,
                               boost::parameter::optional<tag::allocator>
@@ -100,7 +117,8 @@ protected:
         return write_available(write_index, read_index, max_size);
     }
 
-    bool push( T && t, T * buffer, size_t max_size )
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T && t, T * buffer, size_t max_size )
     {
         const size_t write_index = write_index_.load( memory_order_relaxed );  // only written from push thread
         const size_t next = next_index( write_index, max_size );
@@ -108,15 +126,16 @@ protected:
         if( next == read_index_.load( memory_order_acquire ) )
             return false; /* ringbuffer is full */
 
-        new (buffer + write_index) T(std::move(t)); // move-construct
+        new (buffer + write_index) T(boost::move(t)); // move-construct
 
         write_index_.store( next, memory_order_release );
 
         return true;
     }
+#endif
 
     template<typename T>
-    typename std::enable_if< std::is_copy_constructible<T>::value, bool >::type
+    typename boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type
     push(T const & t, T * buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
@@ -401,8 +420,8 @@ private:
         return write_index == read_index;
     }
 
-    template< class OutputIterator>
-    typename std::enable_if< boost::has_trivial_destructor<T>::value, OutputIterator >::type
+    template<class OutputIterator>
+    typename boost::enable_if<boost::has_trivial_destructor<T>::value, OutputIterator >::type
     copy_and_delete( T * first, T * last, OutputIterator out )
     {
         return std::copy(first, last, out); // will use memcpy if possible
@@ -410,17 +429,17 @@ private:
 
 
     template<class OutputIterator>
-    typename std::enable_if< ! boost::has_trivial_destructor<T>::value, OutputIterator >::type
+    typename boost::disable_if<boost::has_trivial_destructor<T>::value, OutputIterator >::type
         copy_and_delete( T * first, T * last, OutputIterator out )
     {
         for (; first != last; ++first, ++out) {
-            *out = std::move(*first);
+            *out = boost::move(*first);
             first->~T();
         }
         return out;
     }
 
-    template< class Functor >
+    template<class Functor>
     void run_functor_and_delete( T * first, T * last, Functor & functor )
     {
         for (; first != last; ++first) {
@@ -470,16 +489,18 @@ protected:
 
 public:
 
-    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
+    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
     bool push(T const & t)
     {
         return ringbuffer_base<T>::push(t, data(), max_size);
     }
 
-    bool push(T&& t)
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T && t)
     {
-        return ringbuffer_base<T>::push(std::move(t), data(), max_size);
+        return ringbuffer_base<T>::push(boost::move(t), data(), max_size);
     }
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -589,17 +610,19 @@ public:
         Alloc::deallocate(array_, max_elements_);
     }
 
-    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
+    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
     bool
     push(T const & t)
     {
         return ringbuffer_base<T>::push(t, &*array_, max_elements_);
     }
 
-    bool push(T&& t)
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T && t)
     {
-        return ringbuffer_base<T>::push(std::move(t), &*array_, max_elements_);
+        return ringbuffer_base<T>::push(boost::move(t), &*array_, max_elements_);
     }
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -794,12 +817,13 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    template< typename = std::enable_if< std::is_copy_constructible<T>::value, bool >::type >
-	bool push(T const & t)
+    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
+    bool push(T const & t)
     {
         return base_type::push(t);
     }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     /** Pushes object t to the ringbuffer.
      *
      * \pre only one thread is allowed to push data to the spsc_queue
@@ -808,10 +832,11 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    bool push( T && t )
+    bool push(T && t)
     {
-        return base_type::push( std::move( t ) );
+        return base_type::push(boost::move(t));
     }
+#endif
 
     /** Pops one object from ringbuffer.
      *
@@ -824,7 +849,7 @@ public:
     bool pop ()
     {
         detail::consume_noop consume_functor;
-        return consume_one( consume_functor );
+        return consume_one(consume_functor);
     }
 
     /** Pops one object from ringbuffer. If it is move assignable it will be moved, 
@@ -838,20 +863,20 @@ public:
      */
     template <typename U>
     typename boost::enable_if<typename integral_constant<bool, 
-        is_convertible<T, U>::value && !std::is_move_assignable<T>::value>::type, bool>::type
-    pop ( U & ret)
+        is_convertible<T, U>::value && !detail::is_move_assignable<T>::value>::type, bool>::type
+    pop(U & ret)
     {
         detail::consume_via_copy<U> consume_functor(ret);
-        return consume_one( consume_functor );
+        return consume_one(consume_functor);
     }
 
     template <typename U>
     typename boost::enable_if<typename integral_constant<bool, 
-        is_convertible<T, U>::value && std::is_move_assignable<T>::value>::type, bool>::type
-     pop ( U & ret )
+        is_convertible<T, U>::value && detail::is_move_assignable<T>::value>::type, bool>::type
+     pop(U & ret)
     {
        detail::consume_via_move<U> consume_functor( ret );
-       return consume_one( consume_functor );
+       return consume_one(consume_functor);
     }
    
 
