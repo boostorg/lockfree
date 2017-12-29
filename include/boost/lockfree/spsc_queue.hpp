@@ -137,7 +137,7 @@ protected:
 #endif
 
     template<typename T>
-    typename boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type
+    typename boost::enable_if<boost::is_copy_constructible<T>, bool >::type
     push(T const & t, T * buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
@@ -423,7 +423,7 @@ private:
     }
 
     template<class OutputIterator>
-    typename boost::enable_if<boost::has_trivial_destructor<T>::value, OutputIterator >::type
+    typename boost::enable_if<boost::has_trivial_destructor<T>, OutputIterator >::type
     copy_and_delete( T * first, T * last, OutputIterator out )
     {
         return std::copy(first, last, out); // will use memcpy if possible
@@ -431,7 +431,7 @@ private:
 
 
     template<class OutputIterator>
-    typename boost::disable_if<boost::has_trivial_destructor<T>::value, OutputIterator >::type
+    typename boost::disable_if<boost::has_trivial_destructor<T>, OutputIterator >::type
         copy_and_delete( T * first, T * last, OutputIterator out )
     {
         for (; first != last; ++first, ++out) {
