@@ -13,11 +13,7 @@
 #include <algorithm>
 #include <memory>
 
-#include <boost/config.hpp> // for BOOST_LIKELY
-
-#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
-#include <type_traits> // for is_move_assignable
-#endif
+#include <boost/config.hpp> // for BOOST_NO_CXX11_
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
@@ -46,20 +42,6 @@
 namespace boost    {
 namespace lockfree {
 namespace detail   {
-
-  // there does not seem to be a coresponding boost trait, 
-  // so for C++98, C++03 compatibility we roll our own falling back on std::
-  template<class T>
-  struct is_move_assignable
-  {
-    static const bool value =
-#ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
-      false;
-#else
-      std::is_move_assignable<T>::value;
-#endif
-  };
-
 
 typedef parameter::parameters<boost::parameter::optional<tag::capacity>,
                               boost::parameter::optional<tag::allocator>
