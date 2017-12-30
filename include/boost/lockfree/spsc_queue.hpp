@@ -12,13 +12,16 @@
 
 #include <algorithm>
 #include <memory>
+
+#include <boost/config.hpp> // for BOOST_LIKELY
+
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 #include <type_traits> // for is_move_assignable
 #endif
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
+
 #include <boost/static_assert.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -31,6 +34,7 @@
 #include <boost/lockfree/detail/copy_payload.hpp>
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 #include <boost/lockfree/detail/move_payload.hpp>
+#include <boost/move/move.hpp>
 #endif
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
@@ -136,9 +140,9 @@ protected:
     }
 #endif
 
-    template<typename T>
-    typename boost::enable_if<boost::is_copy_constructible<T>, bool >::type
-    push(T const & t, T * buffer, size_t max_size)
+    template<typename U>
+    typename boost::enable_if<boost::integral_constant<bool, boost::is_copy_constructible<U>::value && boost::is_same<T,U>::value>, bool>::type
+    push(U const & t, U * buffer, size_t max_size)
     {
         const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
         const size_t next = next_index(write_index, max_size);
@@ -422,20 +426,24 @@ private:
         return write_index == read_index;
     }
 
+
     template<class OutputIterator>
-    typename boost::enable_if<boost::has_trivial_destructor<T>, OutputIterator >::type
-    copy_and_delete( T * first, T * last, OutputIterator out )
+    typename boost::enable_if<boost::has_trivial_destructor<T>, OutputIterator>::type
+    copy_and_delete(T * first, T * last, OutputIterator out)
     {
         return std::copy(first, last, out); // will use memcpy if possible
     }
 
-
     template<class OutputIterator>
-    typename boost::disable_if<boost::has_trivial_destructor<T>, OutputIterator >::type
-        copy_and_delete( T * first, T * last, OutputIterator out )
+    typename boost::disable_if<boost::has_trivial_destructor<T>, OutputIterator>::type
+        copy_and_delete(T * first, T * last, OutputIterator out)
     {
         for (; first != last; ++first, ++out) {
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
             *out = boost::move(*first);
+#else
+            *out = *first;
+#endif
             first->~T();
         }
         return out;
@@ -491,8 +499,9 @@ protected:
 
 public:
 
-    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
-    bool push(T const & t)
+    template<typename U>
+    typename boost::enable_if<boost::integral_constant<bool, boost::is_copy_constructible<U>::value && boost::is_same<T, U>::value>,bool>::type
+    push(U const & t)
     {
         return ringbuffer_base<T>::push(t, data(), max_size);
     }
@@ -612,9 +621,9 @@ public:
         Alloc::deallocate(array_, max_elements_);
     }
 
-    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
-    bool
-    push(T const & t)
+    template< typename U>
+    typename boost::enable_if< boost::integral_constant<bool, boost::is_copy_constructible<U>::value && boost::is_same<T,U>::value>, bool >::type
+    push(U const & t)
     {
         return ringbuffer_base<T>::push(t, &*array_, max_elements_);
     }
@@ -819,10 +828,10 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    template< typename = boost::enable_if<boost::is_copy_constructible<T>::value, bool >::type >
-    bool push(T const & t)
+    bool
+    push(T const & u)
     {
-        return base_type::push(t);
+        return base_type::push(u);
     }
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -863,24 +872,25 @@ public:
      *
      * \note Thread-safe and wait-free
      */
-    template <typename U>
-    typename boost::enable_if<typename integral_constant<bool, 
-        is_convertible<T, U>::value && !detail::is_move_assignable<T>::value>::type, bool>::type
-    pop(U & ret)
+#ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+    bool
+    pop(T & ret)
     {
-        detail::consume_via_copy<U> consume_functor(ret);
+        detail::consume_via_copy<T> consume_functor(ret);
         return consume_one(consume_functor);
     }
 
-    template <typename U>
-    typename boost::enable_if<typename integral_constant<bool, 
-        is_convertible<T, U>::value && detail::is_move_assignable<T>::value>::type, bool>::type
-     pop(U & ret)
+#else
+
+    bool
+    pop(T & ret)
     {
-       detail::consume_via_move<U> consume_functor( ret );
+       detail::consume_via_move<T> consume_functor( ret );
        return consume_one(consume_functor);
     }
    
+#endif
 
     /** Pushes as many objects from the array t as there is space.
      *
