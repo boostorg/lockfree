@@ -874,19 +874,21 @@ public:
      */
 #ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
 
-    bool
-    pop(T & ret)
+    template <typename U>
+    typename boost::enable_if<typename is_convertible<T, U>::type, bool>::type
+    pop(U & ret)
     {
-        detail::consume_via_copy<T> consume_functor(ret);
+        detail::consume_via_copy<U> consume_functor(ret);
         return consume_one(consume_functor);
     }
 
 #else
 
-    bool
-    pop(T & ret)
+    template <typename U>
+    typename boost::enable_if<typename is_convertible<T, U>::type, bool>::type
+    pop(U & ret)
     {
-       detail::consume_via_move<T> consume_functor( ret );
+       detail::consume_via_move<U> consume_functor( ret );
        return consume_one(consume_functor);
     }
    
