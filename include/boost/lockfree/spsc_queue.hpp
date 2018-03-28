@@ -557,8 +557,8 @@ public:
 #ifdef BOOST_NO_CXX11_ALLOCATOR
         array_ = Alloc::allocate(max_elements_);
 #else
-        Alloc& alloc = *this;
-        array_ = allocator_traits::allocate(alloc, max_elements_);
+        Alloc& allocator = *this;
+        array_ = allocator_traits::allocate(allocator, max_elements_);
 #endif
     }
 
@@ -568,8 +568,8 @@ public:
 #ifdef BOOST_NO_CXX11_ALLOCATOR
         array_ = Alloc::allocate(max_elements_);
 #else
-        Alloc& alloc = *this;
-        array_ = allocator_traits::allocate(alloc, max_elements_);
+        Alloc& allocator = *this;
+        array_ = allocator_traits::allocate(allocator, max_elements_);
 #endif
     }
 
@@ -582,8 +582,8 @@ public:
 #ifdef BOOST_NO_CXX11_ALLOCATOR
         Alloc::deallocate(array_, max_elements_);
 #else
-        Alloc& alloc = *this;
-        allocator_traits::deallocate(alloc, array_, max_elements_);
+        Alloc& allocator = *this;
+        allocator_traits::deallocate(allocator, array_, max_elements_);
 #endif
     }
 
