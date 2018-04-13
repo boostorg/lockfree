@@ -104,7 +104,7 @@ public:
     }
 
     template <bool ThreadSafe>
-    void destruct (tagged_node_handle tagged_ptr)
+    void destruct (tagged_node_handle const & tagged_ptr)
     {
         T * n = tagged_ptr.get_ptr();
         n->~T();
