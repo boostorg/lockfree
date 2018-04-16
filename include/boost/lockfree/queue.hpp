@@ -17,6 +17,7 @@
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/config.hpp> // for BOOST_LIKELY & BOOST_ALIGNMENT
 
+#include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
@@ -34,6 +35,14 @@
 #pragma warning(push)
 #pragma warning(disable: 4324) // structure was padded due to __declspec(align())
 #endif
+
+#if defined(BOOST_INTEL) && (BOOST_INTEL_CXX_VERSION > 1000)
+#pragma warning(push)
+#pragma warning(disable:488) // template parameter unused in declaring parameter types, 
+                             // gets erronously triggered the queue constructor which
+                             // takes an allocator of another type and rebinds it
+#endif
+
 
 
 namespace boost    {
@@ -181,7 +190,7 @@ public:
     }
 
     template <typename U>
-    explicit queue(typename node_allocator::template rebind<U>::other const & alloc):
+    explicit queue(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
@@ -212,7 +221,7 @@ public:
     }
 
     template <typename U>
-    queue(size_type n, typename node_allocator::template rebind<U>::other const & alloc):
+    queue(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, n + 1)
@@ -543,6 +552,10 @@ private:
 
 } /* namespace lockfree */
 } /* namespace boost */
+
+#if defined(BOOST_INTEL) && (BOOST_INTEL_CXX_VERSION > 1000)
+#pragma warning(pop)
+#endif
 
 #if defined(_MSC_VER)
 #pragma warning(pop)

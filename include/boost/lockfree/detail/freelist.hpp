@@ -104,7 +104,7 @@ public:
     }
 
     template <bool ThreadSafe>
-    void destruct (tagged_node_handle tagged_ptr)
+    void destruct (tagged_node_handle const & tagged_ptr)
     {
         T * n = tagged_ptr.get_ptr();
         n->~T();
@@ -482,7 +482,7 @@ public:
     void destruct (T * n)
     {
         n->~T();
-        deallocate<ThreadSafe>(n - NodeStorage::nodes());
+        deallocate<ThreadSafe>(static_cast<index_t>(n - NodeStorage::nodes()));
     }
 
     bool is_lock_free(void) const
