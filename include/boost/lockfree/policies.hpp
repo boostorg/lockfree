@@ -10,8 +10,7 @@
 #define BOOST_LOCKFREE_POLICIES_HPP_INCLUDED
 
 #include <boost/parameter/aux_/template_keyword.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/size_t.hpp>
+#include <boost/type_traits/integral_constant.hpp>
 
 namespace boost {
 namespace lockfree {
@@ -32,7 +31,8 @@ namespace tag { struct capacity; }
  * */
 template <bool IsFixedSized>
 struct fixed_sized:
-    boost::parameter::template_keyword<tag::fixed_sized, boost::mpl::bool_<IsFixedSized> >
+    boost::parameter::template_keyword<tag::fixed_sized,
+                                       boost::integral_constant<bool, IsFixedSized> >
 {};
 
 /** Sets the \b capacity of a data structure at compile-time.
@@ -41,7 +41,8 @@ struct fixed_sized:
  * */
 template <size_t Size>
 struct capacity:
-    boost::parameter::template_keyword<tag::capacity, boost::mpl::size_t<Size> >
+    boost::parameter::template_keyword<tag::capacity,
+                                       boost::integral_constant<size_t, Size> >
 {};
 
 /** Defines the \b allocator type of a data structure.

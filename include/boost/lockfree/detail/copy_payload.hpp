@@ -9,7 +9,7 @@
 #ifndef BOOST_LOCKFREE_DETAIL_COPY_PAYLOAD_HPP_INCLUDED
 #define BOOST_LOCKFREE_DETAIL_COPY_PAYLOAD_HPP_INCLUDED
 
-#include <boost/mpl/if.hpp>
+#include <boost/type_traits/conditional.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
 #if defined(_MSC_VER)
@@ -42,10 +42,10 @@ struct copy_constructible_and_copyable
 template <typename T, typename U>
 void copy_payload(T & t, U & u)
 {
-    typedef typename boost::mpl::if_<typename boost::is_convertible<T, U>::type,
-                                     copy_convertible,
-                                     copy_constructible_and_copyable
-                                    >::type copy_type;
+    typedef typename boost::conditional<boost::is_convertible<T, U>::value,
+                                        copy_convertible,
+                                        copy_constructible_and_copyable
+                                       >::type copy_type;
     copy_type::copy(t, u);
 }
 
@@ -69,8 +69,7 @@ struct consume_noop
 {
     template <typename U>
     void operator()(const U &)
-    {
-    }
+    {}
 };
 
 
