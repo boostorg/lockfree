@@ -36,7 +36,12 @@ struct spsc_queue_tester
 
     boost::lockfree::detail::atomic<long> spsc_queue_cnt, received_nodes;
 
+// In VxWorks one RTP just supports 65535 objects
+#ifndef __VXWORKS__
     static_hashed_set<int, 1<<16 > working_set;
+#else
+    static_hashed_set<int, 1<<15 > working_set;
+#endif
 
     spsc_queue_tester(void):
         spsc_queue_cnt(0), received_nodes(0)
@@ -118,7 +123,13 @@ struct spsc_queue_tester_buffering
 
     boost::lockfree::detail::atomic<long> spsc_queue_cnt;
 
+// In VxWorks one RTP just supports 65535 objects
+#ifndef __VXWORKS__
     static_hashed_set<int, 1<<16 > working_set;
+#else
+    static_hashed_set<int, 1<<15 > working_set;
+#endif
+
     boost::lockfree::detail::atomic<size_t> received_nodes;
 
     spsc_queue_tester_buffering(void):

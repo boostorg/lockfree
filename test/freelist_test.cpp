@@ -190,6 +190,10 @@ struct freelist_tester
 
             if (running.load() == false)
                 break;
+
+#ifdef __VXWORKS__
+            boost::thread::yield();
+#endif
         }
 
         dummy * node;

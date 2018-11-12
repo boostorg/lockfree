@@ -51,11 +51,17 @@ struct queue_stress_tester
             assert(inserted);
 
             if (Bounded)
-                while(stk.bounded_push(id) == false)
-                    /*thread::yield()*/;
+                while(stk.bounded_push(id) == false) {
+#ifdef __VXWORKS__
+                    thread::yield();
+#endif
+                }
             else
-                while(stk.push(id) == false)
-                    /*thread::yield()*/;
+                while(stk.push(id) == false) {
+#ifdef __VXWORKS__
+                    thread::yield();
+#endif
+                }
             ++push_count;
         }
         writers_finished += 1;
@@ -90,6 +96,10 @@ struct queue_stress_tester
 
             if ( writers_finished.load() == writer_threads )
                 break;
+
+#ifdef __VXWORKS__
+            thread::yield();
+#endif
         }
 
         while (consume_element(q));
