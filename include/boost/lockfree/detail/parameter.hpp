@@ -34,7 +34,7 @@ public:
     static const bool has_capacity = _has_capacity::value;
 
     typedef typename boost::mpl::eval_if<
-        typename boost::mpl::has_key<bound_args, tag::capacity>::type
+        _has_capacity
       , boost::parameter::binding<bound_args, tag::capacity>
       , boost::mpl::size_t< 0 >
     >::type capacity_t;
@@ -53,7 +53,7 @@ public:
     static const bool has_allocator = _has_allocator::value;
 
     typedef typename boost::mpl::eval_if<
-        typename boost::mpl::has_key<bound_args, tag::allocator>::type
+        _has_allocator
       , boost::parameter::binding<bound_args, tag::allocator>
       , boost::mpl::identity<std::allocator<T> >
     >::type allocator_arg;
@@ -71,7 +71,7 @@ public:
     static const bool has_fixed_sized = _has_fixed_sized::value;
 
     typedef typename mpl::eval_if<
-        typename boost::mpl::has_key<bound_args, tag::fixed_sized>::type
+        _has_fixed_sized
       , boost::parameter::binding<bound_args, tag::fixed_sized>
       , boost::mpl::bool_<default_>
     >::type type;
