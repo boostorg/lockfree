@@ -28,16 +28,15 @@ template <typename bound_args>
 struct extract_capacity
 {
 private:
-    typedef typename boost::mpl::has_key<bound_args, tag::capacity>::type _has_capacity;
+    typedef typename mpl::has_key<bound_args, tag::capacity>::type _has_capacity;
 
 public:
     static const bool has_capacity = _has_capacity::value;
 
-    typedef typename boost::mpl::eval_if<
-        _has_capacity
-      , boost::parameter::binding<bound_args, tag::capacity>
-      , boost::mpl::size_t< 0 >
-    >::type capacity_t;
+    typedef typename mpl::eval_if<_has_capacity,
+                                  parameter::binding<bound_args, tag::capacity>,
+                                  mpl::size_t< 0 >
+                                 >::type capacity_t;
 
     static const std::size_t capacity = capacity_t::value;
 };
@@ -52,11 +51,10 @@ private:
 public:
     static const bool has_allocator = _has_allocator::value;
 
-    typedef typename boost::mpl::eval_if<
-        _has_allocator
-      , boost::parameter::binding<bound_args, tag::allocator>
-      , boost::mpl::identity<std::allocator<T> >
-    >::type allocator_arg;
+    typedef typename mpl::eval_if<_has_allocator,
+                                  parameter::binding<bound_args, tag::allocator>,
+                                  mpl::identity<std::allocator<T> >
+                                 >::type allocator_arg;
 
     typedef typename detail::allocator_rebind_helper<allocator_arg, T>::type type;
 };
@@ -70,11 +68,10 @@ private:
 public:
     static const bool has_fixed_sized = _has_fixed_sized::value;
 
-    typedef typename mpl::eval_if<
-        _has_fixed_sized
-      , boost::parameter::binding<bound_args, tag::fixed_sized>
-      , boost::mpl::bool_<default_>
-    >::type type;
+    typedef typename mpl::eval_if<_has_fixed_sized,
+                                  parameter::binding<bound_args, tag::fixed_sized>,
+                                  mpl::bool_<default_>
+                                 >::type type;
 
     static const bool value = type::value;
 };
