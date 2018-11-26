@@ -46,7 +46,7 @@ template <typename bound_args, typename T>
 struct extract_allocator
 {
 private:
-    typedef typename boost::mpl::has_key<bound_args, tag::allocator>::type _has_allocator;
+    typedef typename mpl::has_key<bound_args, tag::allocator>::type _has_allocator;
 
 public:
     static const bool has_allocator = _has_allocator::value;
@@ -63,7 +63,7 @@ template <typename bound_args, bool default_ = false>
 struct extract_fixed_sized
 {
 private:
-    typedef typename boost::mpl::has_key<bound_args, tag::fixed_sized>::type _has_fixed_sized;
+    typedef typename mpl::has_key<bound_args, tag::fixed_sized>::type _has_fixed_sized;
 
 public:
     static const bool has_fixed_sized = _has_fixed_sized::value;
