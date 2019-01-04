@@ -13,9 +13,7 @@
 #include <boost/parameter/parameters.hpp>
 #include <boost/parameter/binding.hpp>
 
-#include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/has_key.hpp>
-#include <boost/mpl/identity.hpp>
+#include <boost/mpl/void.hpp>
 
 #include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 
@@ -24,19 +22,25 @@ namespace boost {
 namespace lockfree {
 namespace detail {
 
+namespace mpl = boost::mpl;
+
+template <typename bound_args, typename tag_type>
+struct has_arg
+{
+    typedef typename parameter::binding<bound_args, tag_type, mpl::void_>::type type;
+    static const bool value = mpl::is_not_void_<type>::type::value;
+};
+
+
 template <typename bound_args>
 struct extract_capacity
 {
-private:
-    typedef typename mpl::has_key<bound_args, tag::capacity>::type _has_capacity;
+    static const bool has_capacity = has_arg<bound_args, tag::capacity>::value;
 
-public:
-    static const bool has_capacity = _has_capacity::value;
-
-    typedef typename mpl::eval_if<_has_capacity,
-                                  parameter::binding<bound_args, tag::capacity>,
-                                  mpl::size_t< 0 >
-                                 >::type capacity_t;
+    typedef typename mpl::if_c<has_capacity,
+                               typename has_arg<bound_args, tag::capacity>::type,
+                               mpl::size_t< 0 >
+                              >::type capacity_t;
 
     static const std::size_t capacity = capacity_t::value;
 };
@@ -45,16 +49,12 @@ public:
 template <typename bound_args, typename T>
 struct extract_allocator
 {
-private:
-    typedef typename mpl::has_key<bound_args, tag::allocator>::type _has_allocator;
+    static const bool has_allocator = has_arg<bound_args, tag::allocator>::value;
 
-public:
-    static const bool has_allocator = _has_allocator::value;
-
-    typedef typename mpl::eval_if<_has_allocator,
-                                  parameter::binding<bound_args, tag::allocator>,
-                                  mpl::identity<std::allocator<T> >
-                                 >::type allocator_arg;
+    typedef typename mpl::if_c<has_allocator,
+                               typename has_arg<bound_args, tag::allocator>::type,
+                               std::allocator<T>
+                              >::type allocator_arg;
 
     typedef typename detail::allocator_rebind_helper<allocator_arg, T>::type type;
 };
@@ -62,16 +62,12 @@ public:
 template <typename bound_args, bool default_ = false>
 struct extract_fixed_sized
 {
-private:
-    typedef typename mpl::has_key<bound_args, tag::fixed_sized>::type _has_fixed_sized;
+    static const bool has_fixed_sized = has_arg<bound_args, tag::fixed_sized>::value;
 
-public:
-    static const bool has_fixed_sized = _has_fixed_sized::value;
-
-    typedef typename mpl::eval_if<_has_fixed_sized,
-                                  parameter::binding<bound_args, tag::fixed_sized>,
-                                  mpl::bool_<default_>
-                                 >::type type;
+    typedef typename mpl::if_c<has_fixed_sized,
+                               typename has_arg<bound_args, tag::fixed_sized>::type,
+                               mpl::bool_<default_>
+                              >::type type;
 
     static const bool value = type::value;
 };
