@@ -117,7 +117,7 @@ private:
         typedef typename detail::select_tagged_handle<node, node_based>::handle_type handle_type;
 
         node(T const & v, handle_type null_handle):
-            data(v), next(tagged_node_handle(null_handle, 0))
+            next(tagged_node_handle(null_handle, 0)), data(v)
         {
             /* increment tag to avoid ABA problem */
             tagged_node_handle old_next = next.load(memory_order_relaxed);
@@ -132,8 +132,8 @@ private:
         node(void)
         {}
 
-        T data;
         atomic<tagged_node_handle> next;
+        T data;
     };
 
     typedef typename detail::extract_allocator<bound_args, node>::type node_allocator;
