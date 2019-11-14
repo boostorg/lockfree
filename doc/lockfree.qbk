@@ -119,11 +119,11 @@ _lockfree_ implements three lock-free data structures:
 
 [variablelist
     [[[classref boost::lockfree::queue]]
-     [a lock-free multi-produced/multi-consumer queue]
+     [a lock-free multi-producer/multi-consumer queue]
     ]
 
     [[[classref boost::lockfree::stack]]
-     [a lock-free multi-produced/multi-consumer stack]
+     [a lock-free multi-producer/multi-consumer stack]
     ]
 
     [[[classref boost::lockfree::spsc_queue]]
