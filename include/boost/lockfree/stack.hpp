@@ -135,15 +135,21 @@ public:
         return tos.is_lock_free() && pool.is_lock_free();
     }
 
-    //! Construct stack
-    // @{
+    /** Construct a fixed-sized stack
+     *
+     * Must specify a capacity
+     * */
     stack(void):
         pool(node_allocator(), capacity)
     {
-        BOOST_ASSERT(has_capacity);
+        BOOST_STATIC_ASSERT(has_capacity);
         initialize();
     }
 
+    /** Construct a fixed-sized stack with a custom allocator
+     *
+     * Must specify a capacity
+     * */
     template <typename U>
     explicit stack(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         pool(alloc, capacity)
@@ -152,23 +158,36 @@ public:
         initialize();
     }
 
+    /** Construct a fixed-sized stack with a custom allocator
+     *
+     * Must specify a capacity
+     * */
     explicit stack(allocator const & alloc):
         pool(alloc, capacity)
     {
-        BOOST_ASSERT(has_capacity);
+        BOOST_STATIC_ASSERT(has_capacity);
         initialize();
     }
-    // @}
 
-    //! Construct stack, allocate n nodes for the freelist.
-    // @{
+    /** Construct a variable-sized stack
+     *
+     * Allocate n nodes initially for the freelist
+     *
+     * Must not specify a capacity
+     * */
     explicit stack(size_type n):
         pool(node_allocator(), n)
     {
-        BOOST_ASSERT(!has_capacity);
+        BOOST_STATIC_ASSERT(!has_capacity);
         initialize();
     }
 
+    /** Construct a variable-sized stack with a custom allocator
+     *
+     * Allocate n nodes initially for the freelist
+     *
+     * Must not specify a capacity
+     * */
     template <typename U>
     stack(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         pool(alloc, n)
@@ -176,7 +195,6 @@ public:
         BOOST_STATIC_ASSERT(!has_capacity);
         initialize();
     }
-    // @}
 
     /** Allocate n nodes for freelist
      *
