@@ -749,38 +749,48 @@ public:
      *
      *  \pre spsc_queue must be configured to be sized at compile-time
      */
-    // @{
     spsc_queue(void)
     {
         BOOST_ASSERT(!runtime_sized);
     }
 
+    /** Constructs a spsc_queue with a custom allocator
+     *
+     *  \pre spsc_queue must be configured to be sized at compile-time
+     *
+     *  \note This is just for API compatibility: an allocator isn't actually needed
+     */
     template <typename U>
     explicit spsc_queue(typename detail::allocator_rebind_helper<allocator, U>::type const &)
     {
-        // just for API compatibility: we don't actually need an allocator
         BOOST_STATIC_ASSERT(!runtime_sized);
     }
 
+    /** Constructs a spsc_queue with a custom allocator
+     *
+     *  \pre spsc_queue must be configured to be sized at compile-time
+     *
+     *  \note This is just for API compatibility: an allocator isn't actually needed
+     */
     explicit spsc_queue(allocator const &)
     {
-        // just for API compatibility: we don't actually need an allocator
         BOOST_ASSERT(!runtime_sized);
     }
-    // @}
-
 
     /** Constructs a spsc_queue for element_count elements
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
-    // @{
     explicit spsc_queue(size_type element_count):
         base_type(element_count)
     {
         BOOST_ASSERT(runtime_sized);
     }
 
+    /** Constructs a spsc_queue for element_count elements with a custom allocator
+     *
+     *  \pre spsc_queue must be configured to be sized at run-time
+     */
     template <typename U>
     spsc_queue(size_type element_count, typename detail::allocator_rebind_helper<allocator, U>::type const & alloc):
         base_type(alloc, element_count)
@@ -788,12 +798,15 @@ public:
         BOOST_STATIC_ASSERT(runtime_sized);
     }
 
+    /** Constructs a spsc_queue for element_count elements with a custom allocator
+     *
+     *  \pre spsc_queue must be configured to be sized at run-time
+     */
     spsc_queue(size_type element_count, allocator_arg const & alloc):
         base_type(alloc, element_count)
     {
         BOOST_ASSERT(runtime_sized);
     }
-    // @}
 
     /** Pushes object t to the ringbuffer.
      *
