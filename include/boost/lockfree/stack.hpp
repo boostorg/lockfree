@@ -142,6 +142,8 @@ public:
     stack(void):
         pool(node_allocator(), capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
@@ -165,6 +167,8 @@ public:
     explicit stack(allocator const & alloc):
         pool(alloc, capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
@@ -178,6 +182,8 @@ public:
     explicit stack(size_type n):
         pool(node_allocator(), n)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(!has_capacity);
         initialize();
     }
@@ -204,7 +210,9 @@ public:
      * */
     void reserve(size_type n)
     {
-        BOOST_STATIC_ASSERT(!has_capacity);
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
+        BOOST_ASSERT(!has_capacity);
         pool.template reserve<true>(n);
     }
 
@@ -216,7 +224,9 @@ public:
      * */
     void reserve_unsafe(size_type n)
     {
-        BOOST_STATIC_ASSERT(!has_capacity);
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
+        BOOST_ASSERT(!has_capacity);
         pool.template reserve<false>(n);
     }
 

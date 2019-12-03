@@ -187,6 +187,8 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
@@ -214,6 +216,8 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
@@ -229,6 +233,8 @@ public:
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), n + 1)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(!has_capacity);
         initialize();
     }

@@ -751,6 +751,8 @@ public:
      */
     spsc_queue(void)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(!runtime_sized);
     }
 
@@ -774,6 +776,8 @@ public:
      */
     explicit spsc_queue(allocator const &)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(!runtime_sized);
     }
 
@@ -784,6 +788,8 @@ public:
     explicit spsc_queue(size_type element_count):
         base_type(element_count)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(runtime_sized);
     }
 
@@ -805,6 +811,8 @@ public:
     spsc_queue(size_type element_count, allocator_arg const & alloc):
         base_type(alloc, element_count)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(runtime_sized);
     }
 
