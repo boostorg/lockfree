@@ -180,20 +180,20 @@ public:
 
     /** Construct a fixed-sized queue
      *
-     * Must specify a capacity
+     *  \pre Must specify a capacity<> argument
      * */
     queue(void):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
 
     /** Construct a fixed-sized queue with a custom allocator
      *
-     * Must specify a capacity
+     *  \pre Must specify a capacity<> argument
      * */
     template <typename U>
     explicit queue(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
@@ -207,37 +207,37 @@ public:
 
     /** Construct a fixed-sized queue with a custom allocator
      *
-     * Must specify a capacity
+     *  \pre Must specify a capacity<> argument
      * */
     explicit queue(allocator const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
     {
-        BOOST_STATIC_ASSERT(has_capacity);
+        BOOST_ASSERT(has_capacity);
         initialize();
     }
 
     /** Construct a variable-sized queue
      *
-     * Allocate n nodes initially for the freelist
+     *  Allocate n nodes initially for the freelist
      *
-     * Must not specify a capacity
+     *  \pre Must \b not specify a capacity<> argument
      * */
     explicit queue(size_type n):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), n + 1)
     {
-        BOOST_STATIC_ASSERT(!has_capacity);
+        BOOST_ASSERT(!has_capacity);
         initialize();
     }
 
     /** Construct a variable-sized queue with a custom allocator
      *
-     * Allocate n nodes initially for the freelist
+     *  Allocate n nodes initially for the freelist
      *
-     * Must not specify a capacity
+     *  \pre Must \b not specify a capacity<> argument
      * */
     template <typename U>
     queue(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
