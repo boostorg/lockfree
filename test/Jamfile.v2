@@ -32,6 +32,7 @@ rule test_all
         <toolset>acc-pa_risc:<linkflags>-lrt
         <target-os>windows,<toolset>gcc:<linkflags>"-lole32 -loleaut32 -lpsapi -ladvapi32"
         <host-os>hpux,<toolset>gcc:<linkflags>"-Wl,+as,mpas"
+        <host-os>linux,<toolset>clang:<linkflags>"-latomic"
         <library>../../thread/build//boost_thread/
         <threading>multi
         <link>static

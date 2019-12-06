@@ -178,17 +178,25 @@ public:
         return head_.is_lock_free() && tail_.is_lock_free() && pool.is_lock_free();
     }
 
-    //! Construct queue
-    // @{
+    /** Construct a fixed-sized queue
+     *
+     *  \pre Must specify a capacity<> argument
+     * */
     queue(void):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
 
+    /** Construct a fixed-sized queue with a custom allocator
+     *
+     *  \pre Must specify a capacity<> argument
+     * */
     template <typename U>
     explicit queue(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
@@ -199,27 +207,44 @@ public:
         initialize();
     }
 
+    /** Construct a fixed-sized queue with a custom allocator
+     *
+     *  \pre Must specify a capacity<> argument
+     * */
     explicit queue(allocator const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(has_capacity);
         initialize();
     }
-    // @}
 
-    //! Construct queue, allocate n nodes for the freelist.
-    // @{
+    /** Construct a variable-sized queue
+     *
+     *  Allocate n nodes initially for the freelist
+     *
+     *  \pre Must \b not specify a capacity<> argument
+     * */
     explicit queue(size_type n):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(node_allocator(), n + 1)
     {
+        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT(!has_capacity);
         initialize();
     }
 
+    /** Construct a variable-sized queue with a custom allocator
+     *
+     *  Allocate n nodes initially for the freelist
+     *
+     *  \pre Must \b not specify a capacity<> argument
+     * */
     template <typename U>
     queue(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
@@ -229,7 +254,6 @@ public:
         BOOST_STATIC_ASSERT(!has_capacity);
         initialize();
     }
-    // @}
 
     /** \copydoc boost::lockfree::stack::reserve
      * */
