@@ -266,7 +266,7 @@ private:
         tagged_node_handle old_tos = tos.load(detail::memory_order_relaxed);
 
         tagged_node_handle new_tos (pool.get_handle(new_top_node), old_tos.get_tag());
-        end_node->next = pool.get_pointer(old_tos);
+        end_node->next = pool.get_handle(old_tos);
 
         tos.store(new_tos, memory_order_relaxed);
     }
