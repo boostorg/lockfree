@@ -13,6 +13,7 @@
 #include <limits>
 
 #include <boost/cstdint.hpp>
+#include <boost/lockfree/detail/atomic.hpp>
 #include <boost/predef.h>
 
 namespace boost {
@@ -21,6 +22,14 @@ namespace detail {
 
 #if BOOST_ARCH_X86_64 || defined (__aarch64__)
 
+#define BOOST_LOCKFREE_TAG_16
+
+inline boost::uint16_t make_tag_uint16()
+{
+    static atomic<boost::uint16_t> generator;
+    return generator.fetch_add(7, memory_order_relaxed) & (std::numeric_limits<boost::uint16_t>::max)();
+}
+
 template <class T>
 class tagged_ptr
 {
@@ -28,6 +37,10 @@ class tagged_ptr
 
 public:
     typedef boost::uint16_t tag_t;
+    static tag_t make_tag()
+    {
+        return make_tag_uint16();
+    }
 
 private:
     union cast_unit

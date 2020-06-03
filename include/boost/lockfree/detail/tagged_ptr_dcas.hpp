@@ -13,11 +13,17 @@
 #include <limits>
 
 #include <boost/predef.h>
+#include <boost/lockfree/detail/atomic.hpp>
 
 namespace boost    {
 namespace lockfree {
 namespace detail   {
 
+inline std::size_t make_tag_size_t()
+{
+    static atomic<std::size_t> generator;
+    return generator.fetch_add(7, memory_order_relaxed) & (std::numeric_limits<std::size_t>::max)();
+}
 
 
 template <class T>
@@ -33,6 +39,11 @@ BOOST_ALIGNMENT(2 * sizeof(void*))
 {
 public:
     typedef std::size_t tag_t;
+
+    static tag_t make_tag()
+    {
+        return make_tag_size_t();
+    }
 
     /** uninitialized constructor */
     tagged_ptr(void) BOOST_NOEXCEPT//: ptr(0), tag(0)

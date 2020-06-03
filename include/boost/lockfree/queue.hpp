@@ -116,17 +116,13 @@ private:
         typedef typename detail::select_tagged_handle<node, node_based>::tagged_handle_type tagged_node_handle;
         typedef typename detail::select_tagged_handle<node, node_based>::handle_type handle_type;
 
-        node(T const & v, handle_type null_handle):
-            next(tagged_node_handle(null_handle, 0)), data(v)
-        {
-            /* increment tag to avoid ABA problem */
-            tagged_node_handle old_next = next.load(memory_order_relaxed);
-            tagged_node_handle new_next (null_handle, old_next.get_next_tag());
-            next.store(new_next, memory_order_release);
-        }
+        node(T const & v, tagged_node_handle null_handle):
+            next(null_handle),
+            data(v)
+        {}
 
-        node (handle_type null_handle):
-            next(tagged_node_handle(null_handle, 0))
+        explicit node (tagged_node_handle null_handle):
+            next(null_handle)
         {}
 
         node(void)
@@ -143,7 +139,7 @@ private:
 
     void initialize(void)
     {
-        node * n = pool.template construct<true, false>(pool.null_handle());
+        node * n = pool.template construct<true, false>(tagged_node_handle(pool.null_handle(), tagged_node_handle::make_tag()));
         tagged_node_handle dummy_node(pool.get_handle(n), 0);
         head_.store(dummy_node, memory_order_relaxed);
         tail_.store(dummy_node, memory_order_release);
@@ -323,7 +319,7 @@ private:
     template <bool Bounded>
     bool do_push(T const & t)
     {
-        node * n = pool.template construct<true, Bounded>(t, pool.null_handle());
+        node * n = pool.template construct<true, Bounded>(t, tagged_node_handle(pool.null_handle(), tagged_node_handle::make_tag()));
         handle_type node_handle = pool.get_handle(n);
 
         if (n == NULL)

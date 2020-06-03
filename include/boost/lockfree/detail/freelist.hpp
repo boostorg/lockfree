@@ -160,6 +160,7 @@ public:
         return NULL;
     }
 
+
 protected: // allow use from subclasses
     template <bool ThreadSafe, bool Bounded>
     T * allocate (void)
@@ -255,12 +256,28 @@ private:
     atomic<tagged_node_ptr> pool_;
 };
 
+
+#ifndef BOOST_LOCKFREE_TAG_16
+
+inline boost::uint16_t make_tag_uint16()
+{
+    static atomic<boost::uint16_t> generator;
+    return generator.fetch_add(7, memory_order_relaxed) & (std::numeric_limits<boost::uint16_t>::max)();
+}
+
+#endif
+
 class
 BOOST_ALIGNMENT( 4 ) // workaround for bugs in MSVC
 tagged_index
 {
 public:
     typedef boost::uint16_t tag_t;
+    static tag_t make_tag()
+    {
+        return make_tag_uint16();
+    }
+
     typedef boost::uint16_t index_t;
 
     /** uninitialized constructor */
