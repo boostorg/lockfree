@@ -13,11 +13,11 @@
 
 #include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/core/allocator_access.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/config.hpp> // for BOOST_LIKELY & BOOST_ALIGNMENT
 
-#include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
@@ -198,7 +198,7 @@ public:
      *  \pre Must specify a capacity<> argument
      * */
     template <typename U>
-    explicit queue(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
+    explicit queue(typename boost::allocator_rebind<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, capacity)
@@ -246,7 +246,7 @@ public:
      *  \pre Must \b not specify a capacity<> argument
      * */
     template <typename U>
-    queue(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
+    queue(size_type n, typename boost::allocator_rebind<node_allocator, U>::type const & alloc):
         head_(tagged_node_handle(0, 0)),
         tail_(tagged_node_handle(0, 0)),
         pool(alloc, n + 1)
