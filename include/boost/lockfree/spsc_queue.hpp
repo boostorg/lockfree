@@ -16,6 +16,7 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/core/allocator_access.hpp>
 #include <boost/utility.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -24,7 +25,6 @@
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 
-#include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
@@ -551,7 +551,7 @@ public:
     }
 
     template <typename U>
-    runtime_sized_ringbuffer(typename detail::allocator_rebind_helper<Alloc, U>::type const & alloc, size_type max_elements):
+    runtime_sized_ringbuffer(typename boost::allocator_rebind<Alloc, U>::type const & alloc, size_type max_elements):
         Alloc(alloc), max_elements_(max_elements + 1)
     {
 #ifdef BOOST_NO_CXX11_ALLOCATOR
@@ -763,7 +763,7 @@ public:
      *  \note This is just for API compatibility: an allocator isn't actually needed
      */
     template <typename U>
-    explicit spsc_queue(typename detail::allocator_rebind_helper<allocator, U>::type const &)
+    explicit spsc_queue(typename boost::allocator_rebind<allocator, U>::type const &)
     {
         BOOST_STATIC_ASSERT(!runtime_sized);
     }
@@ -798,7 +798,7 @@ public:
      *  \pre spsc_queue must be configured to be sized at run-time
      */
     template <typename U>
-    spsc_queue(size_type element_count, typename detail::allocator_rebind_helper<allocator, U>::type const & alloc):
+    spsc_queue(size_type element_count, typename boost::allocator_rebind<allocator, U>::type const & alloc):
         base_type(alloc, element_count)
     {
         BOOST_STATIC_ASSERT(runtime_sized);

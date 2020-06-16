@@ -9,13 +9,13 @@
 
 #include <boost/assert.hpp>
 #include <boost/checked_delete.hpp>
+#include <boost/core/allocator_access.hpp>
 #include <boost/core/no_exceptions_support.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/type_traits/is_copy_constructible.hpp>
 
-#include <boost/lockfree/detail/allocator_rebind_helper.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
@@ -153,7 +153,7 @@ public:
      *  \pre Must specify a capacity<> argument
      * */
     template <typename U>
-    explicit stack(typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
+    explicit stack(typename boost::allocator_rebind<node_allocator, U>::type const & alloc):
         pool(alloc, capacity)
     {
         BOOST_STATIC_ASSERT(has_capacity);
@@ -195,7 +195,7 @@ public:
      *  \pre Must \b not specify a capacity<> argument
      * */
     template <typename U>
-    stack(size_type n, typename detail::allocator_rebind_helper<node_allocator, U>::type const & alloc):
+    stack(size_type n, typename boost::allocator_rebind<node_allocator, U>::type const & alloc):
         pool(alloc, n)
     {
         BOOST_STATIC_ASSERT(!has_capacity);
