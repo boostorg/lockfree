@@ -19,7 +19,7 @@ namespace boost {
 namespace lockfree {
 namespace detail {
 
-#if BOOST_ARCH_X86_64 || defined (__aarch64__)
+#if BOOST_ARCH_X86_64 || defined (__aarch64__) || defined(_M_ARM64)
 
 template <class T>
 class tagged_ptr

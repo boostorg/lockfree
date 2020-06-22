@@ -23,7 +23,7 @@
 
 #include <boost/predef.h>
 
-#if BOOST_ARCH_X86_64 || defined (__aarch64__)
+#if BOOST_ARCH_X86_64 || defined (__aarch64__) || defined(_M_ARM64)
 #define BOOST_LOCKFREE_PTR_COMPRESSION 1
 #endif
 
