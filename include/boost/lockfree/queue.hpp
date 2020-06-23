@@ -117,7 +117,7 @@ private:
         typedef typename detail::select_tagged_handle<node, node_based>::handle_type handle_type;
 
         node(T const & v, handle_type null_handle):
-            next(tagged_node_handle(null_handle, 0)), data(v)
+            data(v)
         {
             /* increment tag to avoid ABA problem */
             tagged_node_handle old_next = next.load(memory_order_relaxed);
