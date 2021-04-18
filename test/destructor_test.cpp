@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_instance_deleter_test )
 BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_test )
 {
     {
-        boost::lockfree::spsc_queue<tester, boost::lockfree::capacity<128>> q;
+        boost::lockfree::spsc_queue<tester, boost::lockfree::capacity<128> > q;
         q.push(tester());
         q.push(tester());
         q.push(tester());
