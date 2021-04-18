@@ -338,7 +338,7 @@ protected:
 
 template <typename T,
           std::size_t size>
-struct compiletime_sized_freelist_storage
+struct BOOST_ALIGNMENT(BOOST_LOCKFREE_CACHELINE_BYTES) compiletime_sized_freelist_storage
 {
     // array-based freelists only support a 16bit address space.
     BOOST_STATIC_ASSERT(size < 65536);
