@@ -10,5 +10,6 @@
     ],
     "maintainers": [
         "Tim Blechmann <tim -at- klingt.org>"
-    ]
+    ],
+    "cxxstd": "03"
 }
