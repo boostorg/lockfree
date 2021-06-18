@@ -16,8 +16,8 @@
 #include <iostream>
 #include <memory>
 
-#include "test_helpers.hpp"
 #include "test_common.hpp"
+#include "test_helpers.hpp"
 
 using namespace boost;
 using namespace boost::lockfree;
@@ -405,3 +405,33 @@ BOOST_AUTO_TEST_CASE( spsc_queue_reset_test )
 
     BOOST_REQUIRE(f.empty());
 }
+
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+BOOST_AUTO_TEST_CASE( spsc_queue_unique_ptr_push_pop_test )
+{
+    spsc_queue<std::unique_ptr<int[]>, capacity<64> > f;
+
+    BOOST_REQUIRE(f.empty());
+   
+    unique_ptr<int[]> in;
+    unique_ptr<int[]> out;
+   
+    const int fortytwo = 42;
+   
+    in.reset( new int[1] );
+    in[0] = fortytwo;
+    int* data = in.get();
+   
+    BOOST_REQUIRE( f.push( std::move(in) ) );
+    BOOST_REQUIRE( f.pop(out) );
+
+    BOOST_REQUIRE( out.get() == data );
+    BOOST_REQUIRE( out[0] == fortytwo );
+
+    f.reset();
+
+    BOOST_REQUIRE(f.empty());
+}
+
+#endif
