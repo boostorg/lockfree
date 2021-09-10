@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
@@ -20,10 +21,11 @@
 #include <boost/utility.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
+#include <boost/config.hpp> // for BOOST_LIKELY, BOOST_NO_CXX11_RVALUE_REFERENCES, and BOOST_NO_CXX11_VARIADIC_TEMPLATES
 
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_copy_constructible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -116,6 +118,43 @@ protected:
 
         return true;
     }
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+    bool push(T&& t, T * buffer, size_t max_size)
+    {
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t next = next_index(write_index, max_size);
+
+        if (next == read_index_.load(memory_order_acquire))
+            return false; /* ringbuffer is full */
+
+        new (buffer + write_index) T(std::move_if_noexcept(t)); // move-construct
+
+        write_index_.store(next, memory_order_release);
+
+        return true;
+    }
+
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(T * buffer, size_t max_size, Args&&... args )
+    {
+        const size_t write_index = write_index_.load(memory_order_relaxed);  // only written from push thread
+        const size_t next = next_index(write_index, max_size);
+
+        if (next == read_index_.load(memory_order_acquire))
+            return false; /* ringbuffer is full */
+
+        new (buffer + write_index) T{std::forward<Args>(args)...}; // emplace
+
+        write_index_.store(next, memory_order_release);
+
+        return true;
+    }
+#endif
+
+#endif
 
     size_t push(const T * input_buffer, size_t input_count, T * internal_buffer, size_t max_size)
     {
@@ -283,12 +322,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = output_count - count0;
 
-            copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
-            copy_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
+            move_and_delete(internal_buffer + read_index, internal_buffer + max_size, output_buffer);
+            move_and_delete(internal_buffer, internal_buffer + count1, output_buffer + count0);
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer);
+            move_and_delete(internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer);
             if (new_read_index == max_size)
                 new_read_index = 0;
         }
@@ -314,12 +353,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = avail - count0;
 
-            it = copy_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
-            copy_and_delete(internal_buffer, internal_buffer + count1, it);
+            it = move_and_delete(internal_buffer + read_index, internal_buffer + max_size, it);
+            move_and_delete(internal_buffer, internal_buffer + count1, it);
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete(internal_buffer + read_index, internal_buffer + read_index + avail, it);
+            move_and_delete(internal_buffer + read_index, internal_buffer + read_index + avail, it);
             if (new_read_index == max_size)
                 new_read_index = 0;
         }
@@ -386,8 +425,30 @@ private:
         return write_index == read_index;
     }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     template< class OutputIterator >
-    OutputIterator copy_and_delete( T * first, T * last, OutputIterator out )
+    typename boost::enable_if< typename boost::is_constructible<T, T>::type, OutputIterator>::type
+    move_and_delete( T * first, T * last, OutputIterator out )
+    {
+        if (boost::has_trivial_destructor<T>::value) {
+            return std::move(first, last, out); // will use memcpy if possible
+        } else {
+            for (; first != last; ++first, ++out) {
+                *out = std::move(*first);
+                first->~T();
+            }
+            return out;
+        }
+    }
+#endif
+
+    template< class OutputIterator >
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    typename boost::disable_if< typename boost::is_constructible<T, T>::type, OutputIterator>::type
+#else
+    OutputIterator
+#endif
+    move_and_delete( T * first, T * last, OutputIterator out )
     {
         if (boost::has_trivial_destructor<T>::value) {
             return std::copy(first, last, out); // will use memcpy if possible
@@ -460,6 +521,23 @@ public:
     {
         return ringbuffer_base<T>::push(t, data(), max_size);
     }
+
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), data(), max_size);
+    }
+
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(Args&&... args)
+    {
+        return ringbuffer_base<T>::emplace(data(), max_size, std::forward<Args>(args)...);
+    }
+#endif
+
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -598,6 +676,23 @@ public:
     {
         return ringbuffer_base<T>::push(t, &*array_, max_elements_);
     }
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+    bool push(T&& t)
+    {
+        return ringbuffer_base<T>::push(std::move(t), &*array_, max_elements_);
+    }
+
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(Args&&... args)
+    {
+        return ringbuffer_base<T>::emplace(&*array_, max_elements_, std::forward<Args>(args)...);
+    }
+#endif
+
+#endif
 
     template <typename Functor>
     bool consume_one(Functor & f)
@@ -836,6 +931,41 @@ public:
         return base_type::push(t);
     }
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+    /** Pushes object t to the ringbuffer via move construction/
+     *
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \post object will be pushed to the spsc_queue, unless it is full.
+     * \return true, if the push operation is successful.
+     *
+     * \note Thread-safe and wait-free
+     * */
+
+    bool push(T&& t)
+    {
+        return base_type::push(std::move(t));
+    }
+
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+    /** Emplaces an instance of T to the ringbuffer via direct initialization using the given constructor arguments
+     *  
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \post object will be pushed to the spsc_queue, unless it is full.
+     * \return true, if the push operation is successful.
+     *
+     * \note Thread-safe and wait-free
+     * */
+    template<typename... Args>
+    typename boost::enable_if< typename boost::is_constructible<T, Args...>::type, bool>::type
+    emplace(Args&&... args)
+    {
+        return  base_type::emplace(std::forward<Args>(args)...);
+    }
+#endif
+
+#endif
+
     /** Pops one object from ringbuffer.
      *
      * \pre only one thread is allowed to pop data to the spsc_queue
@@ -1039,8 +1169,7 @@ public:
         if ( !boost::has_trivial_destructor<T>::value ) {
             // make sure to call all destructors!
 
-            T dummy_element;
-            while (pop(dummy_element))
+            while (pop())
             {}
         } else {
             base_type::write_index_.store(0, memory_order_relaxed);
