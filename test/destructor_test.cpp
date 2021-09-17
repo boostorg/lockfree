@@ -80,3 +80,71 @@ BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_test )
     assert(g_instance_counter == 0);
     BOOST_REQUIRE(g_instance_counter == 0);
 }
+
+struct no_default_init_tester
+{
+    int value;
+
+    no_default_init_tester(int value) : value(value)
+    {
+        ++g_instance_counter;
+    }
+
+    no_default_init_tester(no_default_init_tester const& t)
+    {
+        value = t.value;
+
+        ++g_instance_counter;
+    }
+
+    ~no_default_init_tester()
+    {
+        --g_instance_counter;
+    }
+};
+
+BOOST_AUTO_TEST_CASE( stack_instance_deleter_no_default_init_test )
+{
+    {
+        boost::lockfree::stack<no_default_init_tester> q(128);
+        q.push(no_default_init_tester(1));
+        q.push(no_default_init_tester(2));
+        q.push(no_default_init_tester(3));
+        q.push(no_default_init_tester(4));
+        q.push(no_default_init_tester(5));
+    }
+
+    assert(g_instance_counter == 0);
+    BOOST_REQUIRE(g_instance_counter == 0);
+}
+
+
+BOOST_AUTO_TEST_CASE( spsc_queue_instance_deleter_no_default_init_test )
+{
+    {
+        boost::lockfree::spsc_queue<no_default_init_tester> q(128);
+        q.push(no_default_init_tester(1));
+        q.push(no_default_init_tester(2));
+        q.push(no_default_init_tester(3));
+        q.push(no_default_init_tester(4));
+        q.push(no_default_init_tester(5));
+    }
+
+    assert(g_instance_counter == 0);
+    BOOST_REQUIRE(g_instance_counter == 0);
+}
+
+BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_no_default_init_test )
+{
+    {
+        boost::lockfree::spsc_queue<no_default_init_tester, boost::lockfree::capacity<128> > q;
+        q.push(no_default_init_tester(1));
+        q.push(no_default_init_tester(2));
+        q.push(no_default_init_tester(3));
+        q.push(no_default_init_tester(4));
+        q.push(no_default_init_tester(5));
+    }
+
+    assert(g_instance_counter == 0);
+    BOOST_REQUIRE(g_instance_counter == 0);
+}
