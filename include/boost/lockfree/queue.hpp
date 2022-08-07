@@ -392,7 +392,7 @@ public:
      * \post if pop operation is successful, object will be copied to ret.
      * \returns true, if the pop operation is successful, false if queue was empty.
      *
-     * \note Thread-safe and non-blocking. Modifies return argument even if operation fails.
+     * \note Thread-safe and non-blocking. Might modify return argument even if operation fails.
      * */
     bool pop (T & ret)
     {
@@ -405,7 +405,7 @@ public:
      * \post if pop operation is successful, object will be copied to ret.
      * \returns true, if the pop operation is successful, false if queue was empty.
      *
-     * \note Thread-safe and non-blocking. Modifies return argument even if operation fails.
+     * \note Thread-safe and non-blocking. Might modify return argument even if operation fails.
      * */
     template <typename U>
     bool pop (U & ret)
@@ -452,7 +452,7 @@ public:
      * \post if pop operation is successful, object will be copied to ret.
      * \returns true, if the pop operation is successful, false if queue was empty.
      *
-     * \note Not thread-safe, but non-blocking. Modifies return argument even if operation fails.
+     * \note Not thread-safe, but non-blocking. Might modify return argument even if operation fails.
      *
      * */
     bool unsynchronized_pop (T & ret)
@@ -467,7 +467,7 @@ public:
      *
      * \returns true, if the pop operation is successful, false if queue was empty.
      *
-     * \note Not thread-safe, but non-blocking. Modifies return argument even if operation fails.
+     * \note Not thread-safe, but non-blocking. Might modify return argument even if operation fails.
      *
      * */
     template <typename U>
