@@ -97,12 +97,12 @@ public:
 
     /** comparing semantics */
     /* @{ */
-    bool operator== (volatile tagged_ptr const & p) const
+    bool operator== (volatile tagged_ptr const & p) volatile const
     {
         return (ptr == p.ptr);
     }
 
-    bool operator!= (volatile tagged_ptr const & p) const
+    bool operator!= (volatile tagged_ptr const & p) volatile const
     {
         return !operator==(p);
     }
