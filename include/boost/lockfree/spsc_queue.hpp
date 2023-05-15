@@ -837,7 +837,7 @@ public:
 
     /** Pops one object from ringbuffer.
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to pop data from the spsc_queue
      * \post if ringbuffer is not empty, object will be discarded.
      * \return true, if the pop operation is successful, false if ringbuffer was empty.
      *
@@ -851,7 +851,7 @@ public:
 
     /** Pops one object from ringbuffer.
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to pop data from the spsc_queue
      * \post if ringbuffer is not empty, object will be copied to ret.
      * \return true, if the pop operation is successful, false if ringbuffer was empty.
      *
@@ -905,7 +905,7 @@ public:
 
     /** Pops a maximum of size objects from ringbuffer.
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to pop data from the spsc_queue
      * \return number of popped items
      *
      * \note Thread-safe and wait-free
@@ -917,7 +917,7 @@ public:
 
     /** Pops a maximum of size objects from spsc_queue.
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to pop data from the spsc_queue
      * \return number of popped items
      *
      * \note Thread-safe and wait-free
@@ -930,7 +930,7 @@ public:
 
     /** Pops objects to the output iterator it
      *
-     * \pre only one thread is allowed to pop data to the spsc_queue
+     * \pre only one thread is allowed to pop data from the spsc_queue
      * \return number of popped items
      *
      * \note Thread-safe and wait-free
