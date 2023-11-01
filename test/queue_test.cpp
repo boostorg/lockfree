@@ -18,7 +18,6 @@
 
 #include <memory>
 
-#include "test_helpers.hpp"
 
 using namespace boost;
 using namespace boost::lockfree;
@@ -190,4 +189,34 @@ BOOST_AUTO_TEST_CASE( reserve_test )
     memory_queue ms( 1 );
     ms.reserve( 1 );
     ms.reserve_unsafe( 1 );
+}
+
+BOOST_AUTO_TEST_CASE( queue_with_allocator )
+{
+    using allocator_type = std::allocator< char >;
+
+    using queue_t = boost::lockfree::queue< char, boost::lockfree::allocator< allocator_type > >;
+    using queue_with_capacity_t
+        = boost::lockfree::queue< char, boost::lockfree::allocator< allocator_type >, boost::lockfree::capacity< 16 > >;
+
+    auto allocator = queue_t::allocator {};
+
+    {
+        queue_with_capacity_t q_with_allocator {
+            allocator,
+        };
+        queue_t q_with_size_and_allocator {
+            5,
+            allocator,
+        };
+    }
+    {
+        queue_with_capacity_t q_with_allocator {
+            allocator_type {},
+        };
+        queue_t q_with_size_and_allocator {
+            5,
+            allocator_type {},
+        };
+    }
 }

@@ -200,6 +200,19 @@ public:
         initialize();
     }
 
+    /** Construct a variable-sized stack with a custom allocator
+     *
+     *  Allocate n nodes initially for the freelist
+     *
+     *  \pre Must \b not specify a capacity<> argument
+     * */
+    stack( size_type n, node_allocator const& alloc ) :
+        pool( alloc, n )
+    {
+        BOOST_STATIC_ASSERT( !has_capacity );
+        initialize();
+    }
+
     /** Allocate n nodes for freelist
      *
      *  \pre  only valid if no capacity<> argument given
