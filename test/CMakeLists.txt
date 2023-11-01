@@ -41,7 +41,6 @@ foreach(Test ${Tests})
     set (Libs Boost::lockfree
               Boost::unit_test_framework
               Boost::thread
-              Boost::foreach
               boost_lockfree_test_common)
 
     if (Test MATCHES ".*interprocess.*")
@@ -58,6 +57,7 @@ foreach(Test ${Tests})
         LINK_LIBRARIES ${Libs}
         COMPILE_DEFINITIONS BOOST_TEST_NO_OLD_TOOLS
     )
+    set_target_properties( boost_lockfree-${Test} PROPERTIES CMAKE_CXX_STANDARD_REQUIRED 14)
 
     if (TARGET boost_lockfree-${Test})
         add_dependencies(boost_lockfree_all_tests boost_lockfree-${Test} )

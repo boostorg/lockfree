@@ -9,18 +9,17 @@
 #ifndef BOOST_LOCKFREE_FREELIST_HPP_INCLUDED
 #define BOOST_LOCKFREE_FREELIST_HPP_INCLUDED
 
+#include <array>
 #include <cstring>
 #include <limits>
 #include <memory>
-
-#include <boost/array.hpp>
-#include <boost/config.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/static_assert.hpp>
+#include <stdexcept>
 
 #include <boost/align/align_up.hpp>
 #include <boost/align/aligned_allocator_adaptor.hpp>
+#include <boost/config.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/throw_exception.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
@@ -33,6 +32,8 @@
 #endif
 
 namespace boost { namespace lockfree { namespace detail {
+
+//----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, typename Alloc = std::allocator< T > >
 class freelist_stack : Alloc
@@ -261,22 +262,15 @@ class BOOST_ALIGNMENT( 4 ) // workaround for bugs in MSVC
     tagged_index
 {
 public:
-    typedef boost::uint16_t tag_t;
-    typedef boost::uint16_t index_t;
+    typedef std::uint16_t tag_t;
+    typedef std::uint16_t index_t;
 
     /** uninitialized constructor */
-    tagged_index( void ) BOOST_NOEXCEPT //: index(0), tag(0)
+    tagged_index( void ) noexcept //: index(0), tag(0)
     {}
 
     /** copy constructor */
-#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
-    tagged_index( tagged_index const& rhs ) :
-        index( rhs.index ),
-        tag( rhs.tag )
-    {}
-#else
     tagged_index( tagged_index const& rhs ) = default;
-#endif
 
     explicit tagged_index( index_t i, tag_t t = 0 ) :
         index( i ),
@@ -330,13 +324,15 @@ protected:
     tag_t   tag;
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+
 template < typename T, std::size_t size >
 struct BOOST_ALIGNMENT( BOOST_LOCKFREE_CACHELINE_BYTES ) compiletime_sized_freelist_storage
 {
     // array-based freelists only support a 16bit address space.
     BOOST_STATIC_ASSERT( size < 65536 );
 
-    boost::array< char, size * sizeof( T ) + 64 > data;
+    std::array< char, size * sizeof( T ) + 64 > data;
 
     // unused ... only for API purposes
     template < typename Allocator >
@@ -356,6 +352,8 @@ struct BOOST_ALIGNMENT( BOOST_LOCKFREE_CACHELINE_BYTES ) compiletime_sized_freel
         return size;
     }
 };
+
+//----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, typename Alloc = std::allocator< T > >
 struct runtime_sized_freelist_storage :
@@ -393,6 +391,7 @@ struct runtime_sized_freelist_storage :
     }
 };
 
+//----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, typename NodeStorage = runtime_sized_freelist_storage< T > >
 class fixed_size_freelist : NodeStorage
@@ -613,26 +612,35 @@ private:
     atomic< tagged_index > pool_;
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+
 template < typename T, typename Alloc, bool IsCompileTimeSized, bool IsFixedSize, std::size_t Capacity >
 struct select_freelist
 {
-    typedef typename mpl::if_c< IsCompileTimeSized,
+    typedef std::conditional_t< IsCompileTimeSized,
                                 compiletime_sized_freelist_storage< T, Capacity >,
-                                runtime_sized_freelist_storage< T, Alloc > >::type fixed_sized_storage_type;
+                                runtime_sized_freelist_storage< T, Alloc > >
+        fixed_sized_storage_type;
 
-    typedef typename mpl::if_c< IsCompileTimeSized || IsFixedSize,
+    typedef std::conditional_t< IsCompileTimeSized || IsFixedSize,
                                 fixed_size_freelist< T, fixed_sized_storage_type >,
-                                freelist_stack< T, Alloc > >::type type;
+                                freelist_stack< T, Alloc > >
+        type;
 };
+
+template < typename T, typename Alloc, bool IsCompileTimeSized, bool IsFixedSize, std::size_t Capacity >
+using select_freelist_t = typename select_freelist< T, Alloc, IsCompileTimeSized, IsFixedSize, Capacity >::type;
+
+//----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, bool IsNodeBased >
 struct select_tagged_handle
 {
-    typedef typename mpl::if_c< IsNodeBased, tagged_ptr< T >, tagged_index >::type tagged_handle_type;
-
-    typedef typename mpl::if_c< IsNodeBased, T*, typename tagged_index::index_t >::type handle_type;
+    typedef std::conditional_t< IsNodeBased, tagged_ptr< T >, tagged_index >      tagged_handle_type;
+    typedef std::conditional_t< IsNodeBased, T*, typename tagged_index::index_t > handle_type;
 };
 
+//----------------------------------------------------------------------------------------------------------------------
 
 }}} // namespace boost::lockfree::detail
 

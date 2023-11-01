@@ -14,16 +14,15 @@
 #include <boost/assert.hpp>
 #include <boost/config.hpp> // for BOOST_LIKELY & BOOST_ALIGNMENT
 #include <boost/core/allocator_access.hpp>
+#include <boost/parameter/optional.hpp>
+#include <boost/parameter/parameters.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
-
 #include <boost/lockfree/lockfree_forward.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
@@ -78,35 +77,23 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *   - T must have a trivial destructor
  *
  * */
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0, class A1, class A2 >
-#else
 template < typename T, typename... Options >
-#endif
 class queue
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
 
-#    ifdef BOOST_HAS_TRIVIAL_DESTRUCTOR
-    BOOST_STATIC_ASSERT( ( boost::has_trivial_destructor< T >::value ) );
-#    endif
+    BOOST_STATIC_ASSERT( ( std::is_trivially_destructible< T >::value ) );
+    BOOST_STATIC_ASSERT( ( std::is_trivially_assignable< T&, T >::value ) );
 
-#    ifdef BOOST_HAS_TRIVIAL_ASSIGN
-    BOOST_STATIC_ASSERT( ( boost::has_trivial_assign< T >::value ) );
-#    endif
-
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    typedef typename detail::queue_signature::bind< A0, A1, A2 >::type bound_args;
-#    else
     typedef typename detail::queue_signature::bind< Options... >::type bound_args;
-#    endif
 
-    static const bool has_capacity = detail::extract_capacity< bound_args >::has_capacity;
-    static const size_t capacity = detail::extract_capacity< bound_args >::capacity + 1; // the queue uses one dummy node
-    static const bool fixed_sized        = detail::extract_fixed_sized< bound_args >::value;
-    static const bool node_based         = !( has_capacity || fixed_sized );
-    static const bool compile_time_sized = has_capacity;
+    static constexpr bool   has_capacity = detail::extract_capacity< bound_args >::has_capacity;
+    static constexpr size_t capacity
+        = detail::extract_capacity< bound_args >::capacity + 1; // the queue uses one dummy node
+    static constexpr bool fixed_sized        = detail::extract_fixed_sized< bound_args >::value;
+    static constexpr bool node_based         = !( has_capacity || fixed_sized );
+    static constexpr bool compile_time_sized = has_capacity;
 
     struct BOOST_ALIGNMENT( BOOST_LOCKFREE_CACHELINE_BYTES ) node
     {
@@ -133,9 +120,8 @@ private:
         T                            data;
     };
 
-    typedef typename detail::extract_allocator< bound_args, node >::type node_allocator;
-    typedef
-        typename detail::select_freelist< node, node_allocator, compile_time_sized, fixed_sized, capacity >::type pool_t;
+    typedef detail::extract_allocator_t< bound_args, node >                                              node_allocator;
+    typedef detail::select_freelist_t< node, node_allocator, compile_time_sized, fixed_sized, capacity > pool_t;
     typedef typename pool_t::tagged_node_handle                                    tagged_node_handle;
     typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_type;
 
@@ -154,9 +140,6 @@ private:
     };
 
 #endif
-
-    BOOST_DELETED_FUNCTION( queue( queue const& ) )
-    BOOST_DELETED_FUNCTION( queue& operator=( queue const& ) )
 
 public:
     typedef T                                          value_type;
@@ -195,13 +178,12 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< has_capacity > >
     explicit queue( typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, capacity )
     {
-        BOOST_STATIC_ASSERT( has_capacity );
         initialize();
     }
 
@@ -209,14 +191,12 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< has_capacity > >
     explicit queue( allocator const& alloc ) :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, capacity )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( has_capacity );
         initialize();
     }
 
@@ -226,14 +206,12 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     explicit queue( size_type n ) :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( node_allocator(), n + 1 )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( !has_capacity );
         initialize();
     }
 
@@ -243,13 +221,12 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< !has_capacity > >
     queue( size_type n, typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, n + 1 )
     {
-        BOOST_STATIC_ASSERT( !has_capacity );
         initialize();
     }
 
@@ -259,14 +236,19 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     queue( size_type n, allocator const& alloc ) :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, n + 1 )
     {
-        BOOST_STATIC_ASSERT( !has_capacity );
         initialize();
     }
+
+    queue( const queue& )            = delete;
+    queue& operator=( const queue& ) = delete;
+    queue( queue&& )                 = delete;
+    queue& operator=( queue&& )      = delete;
 
     /** \copydoc boost::lockfree::stack::reserve
      * */
@@ -286,8 +268,7 @@ public:
      * */
     ~queue( void )
     {
-        T dummy;
-        while ( unsynchronized_pop( dummy ) ) {}
+        consume_all( []( const T& ) {} );
 
         pool.template destruct< false >( head_.load( memory_order_relaxed ) );
     }
@@ -520,19 +501,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    bool consume_one( Functor& f )
-    {
-        T    element;
-        bool success = pop( element );
-        if ( success )
-            f( element );
-
-        return success;
-    }
-
-    /// \copydoc boost::lockfree::queue::consume_one(Functor & rhs)
-    template < typename Functor >
-    bool consume_one( Functor const& f )
+    bool consume_one( Functor&& f )
     {
         T    element;
         bool success = pop( element );
@@ -551,18 +520,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    size_t consume_all( Functor& f )
-    {
-        size_t element_count = 0;
-        while ( consume_one( f ) )
-            element_count += 1;
-
-        return element_count;
-    }
-
-    /// \copydoc boost::lockfree::queue::consume_all(Functor & rhs)
-    template < typename Functor >
-    size_t consume_all( Functor const& f )
+    size_t consume_all( Functor&& f )
     {
         size_t element_count = 0;
         while ( consume_one( f ) )
@@ -574,7 +532,7 @@ public:
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
     atomic< tagged_node_handle > head_;
-    static const int             padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( tagged_node_handle );
+    static constexpr int         padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( tagged_node_handle );
     char                         padding1[ padding_size ];
     atomic< tagged_node_handle > tail_;
     char                         padding2[ padding_size ];
