@@ -6,7 +6,6 @@
 
 
 #include <boost/lockfree/stack.hpp>
-#include <boost/thread.hpp>
 
 #define BOOST_TEST_MAIN
 #ifdef BOOST_LOCKFREE_INCLUDE_TESTS
@@ -14,8 +13,6 @@
 #else
 #    include <boost/test/unit_test.hpp>
 #endif
-
-#include "test_helpers.hpp"
 
 BOOST_AUTO_TEST_CASE( simple_stack_test )
 {
@@ -61,6 +58,23 @@ BOOST_AUTO_TEST_CASE( ranged_push_test )
     BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
 }
 
+BOOST_AUTO_TEST_CASE( span_push_test )
+{
+    boost::lockfree::stack< long > stk( 128 );
+
+    long data[ 2 ] = { 1, 2 };
+
+    BOOST_TEST_REQUIRE( stk.push( boost::span< const long >( data ) ) == 2 );
+
+    long out;
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
+}
+
+
 BOOST_AUTO_TEST_CASE( ranged_unsynchronized_push_test )
 {
     boost::lockfree::stack< long > stk( 128 );
@@ -76,6 +90,23 @@ BOOST_AUTO_TEST_CASE( ranged_unsynchronized_push_test )
     BOOST_TEST_REQUIRE( out == 1 );
     BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
 }
+
+BOOST_AUTO_TEST_CASE( span_unsynchronized_push_test )
+{
+    boost::lockfree::stack< long > stk( 128 );
+
+    long data[ 2 ] = { 1, 2 };
+
+    BOOST_TEST_REQUIRE( stk.unsynchronized_push( boost::span< const long >( data ) ) == 2 );
+
+    long out;
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
+}
+
 
 BOOST_AUTO_TEST_CASE( fixed_size_stack_test )
 {
@@ -134,18 +165,13 @@ BOOST_AUTO_TEST_CASE( stack_consume_one_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    bool success1 = f.consume_one( test_equal( 2 ) );
-    bool success2 = f.consume_one( test_equal( 1 ) );
-#else
     bool success1 = f.consume_one( []( int i ) {
         BOOST_TEST_REQUIRE( i == 2 );
     } );
 
-    bool success2 = f.consume_one( []( int i ) {
+    bool success2 = f.consume_one( []( int i ) mutable {
         BOOST_TEST_REQUIRE( i == 1 );
     } );
-#endif
 
     BOOST_TEST_REQUIRE( success1 );
     BOOST_TEST_REQUIRE( success2 );
@@ -163,11 +189,7 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all( dummy_functor() );
-#else
     size_t consumed = f.consume_all( []( int i ) {} );
-#endif
 
     BOOST_TEST_REQUIRE( consumed == 2u );
 
@@ -185,11 +207,7 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_test )
     f.push( 2 );
     f.push( 3 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all_atomic( dummy_functor() );
-#else
     size_t consumed = f.consume_all_atomic( []( int i ) {} );
-#endif
 
     BOOST_TEST_REQUIRE( consumed == 3u );
 
@@ -208,11 +226,7 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_reversed_test )
     f.push( 2 );
     f.push( 3 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all_atomic_reversed( dummy_functor() );
-#else
     size_t consumed = f.consume_all_atomic_reversed( []( int i ) {} );
-#endif
 
     BOOST_TEST_REQUIRE( consumed == 3u );
 
