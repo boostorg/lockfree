@@ -7,8 +7,31 @@ cmake_minimum_required(VERSION 3.5...3.16)
 
 project(boost_lockfree VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
+option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" ${BUILD_TESTING})
+
+
 add_library(boost_lockfree INTERFACE)
 add_library(Boost::lockfree ALIAS boost_lockfree)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
+    set(Headers
+        include/boost/lockfree/spsc_queue.hpp
+        include/boost/lockfree/policies.hpp
+        include/boost/lockfree/queue.hpp
+        include/boost/lockfree/lockfree_forward.hpp
+        include/boost/lockfree/detail/prefix.hpp
+        include/boost/lockfree/detail/copy_payload.hpp
+        include/boost/lockfree/detail/tagged_ptr_dcas.hpp
+        include/boost/lockfree/detail/tagged_ptr.hpp
+        include/boost/lockfree/detail/tagged_ptr_ptrcompression.hpp
+        include/boost/lockfree/detail/atomic.hpp
+        include/boost/lockfree/detail/freelist.hpp
+        include/boost/lockfree/detail/parameter.hpp
+        include/boost/lockfree/stack.hpp
+    )
+
+    target_sources(boost_lockfree PUBLIC FILE_SET HEADERS FILES ${Headers} )
+endif()
 
 target_include_directories(boost_lockfree INTERFACE include)
 
@@ -31,9 +54,6 @@ target_link_libraries(boost_lockfree
     Boost::utility
 )
 
-if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
-
-  add_subdirectory(test)
-
+if( BOOST_LOCKFREE_BUILD_TESTS )
+    add_subdirectory(test)
 endif()
-
