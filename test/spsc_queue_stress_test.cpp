@@ -25,9 +25,9 @@ using namespace boost::lockfree;
 using namespace std;
 
 #ifndef BOOST_LOCKFREE_STRESS_TEST
-static const boost::uint32_t nodes_per_thread = 100000;
+static const size_t nodes_per_thread = 100000;
 #else
-static const boost::uint32_t nodes_per_thread = 100000000;
+static const size_t nodes_per_thread = 100000000;
 #endif
 
 struct spsc_queue_tester
@@ -50,7 +50,7 @@ struct spsc_queue_tester
 
     void add( void )
     {
-        for ( boost::uint32_t i = 0; i != nodes_per_thread; ++i ) {
+        for ( size_t i = 0; i != nodes_per_thread; ++i ) {
             int id = generate_id< int >();
             working_set.insert( id );
 
@@ -70,6 +70,7 @@ struct spsc_queue_tester
             ++received_nodes;
             --spsc_queue_cnt;
             bool erased = working_set.erase( data );
+            (void)erased;
             assert( erased );
             return true;
         } else
@@ -143,7 +144,7 @@ struct spsc_queue_tester_buffering
     void add( void )
     {
         boost::array< int, buf_size > input_buffer;
-        for ( boost::uint32_t i = 0; i != nodes_per_thread; i += buf_size ) {
+        for ( size_t i = 0; i != nodes_per_thread; i += buf_size ) {
             for ( size_t i = 0; i != buf_size; ++i ) {
                 int id = generate_id< int >();
                 working_set.insert( id );
@@ -168,11 +169,12 @@ struct spsc_queue_tester_buffering
         size_t popd = sf.pop( output_buffer.c_array(), output_buffer.size() );
 
         if ( popd ) {
-            received_nodes += popd;
-            spsc_queue_cnt -= popd;
+            received_nodes += size_t( popd );
+            spsc_queue_cnt -= long( popd );
 
             for ( size_t i = 0; i != popd; ++i ) {
                 bool erased = working_set.erase( output_buffer[ i ] );
+                (void)erased;
                 assert( erased );
             }
 

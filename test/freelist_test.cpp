@@ -169,6 +169,7 @@ struct freelist_tester
                 dummy* node = fl.template construct< true, bounded >();
                 if ( node ) {
                     bool success = working_set.insert( node );
+                    (void)success;
                     assert( success );
                     allocated_nodes.push( node );
                     break;
@@ -183,6 +184,7 @@ struct freelist_tester
             dummy* node;
             if ( allocated_nodes.pop( node ) ) {
                 bool success = working_set.erase( node );
+                (void)success;
                 assert( success );
                 fl.template destruct< true >( node );
             }
@@ -198,6 +200,7 @@ struct freelist_tester
         dummy* node;
         while ( allocated_nodes.pop( node ) ) {
             bool success = working_set.erase( node );
+            (void)success;
             assert( success );
             fl.template destruct< true >( node );
         }
