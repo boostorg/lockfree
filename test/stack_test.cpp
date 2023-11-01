@@ -272,3 +272,24 @@ BOOST_AUTO_TEST_CASE( stack_with_allocator )
         };
     }
 }
+
+BOOST_AUTO_TEST_CASE( move_semantics )
+{
+    boost::lockfree::stack< std::unique_ptr< int >, boost::lockfree::capacity< 128 > > stk;
+
+    stk.push( std::make_unique< int >( 0 ) );
+    stk.push( std::make_unique< int >( 1 ) );
+
+    auto two = std::make_unique< int >( 2 );
+    stk.push( std::move( two ) );
+
+    std::unique_ptr< int > out;
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( *out == 2 );
+
+    stk.consume_one( []( std::unique_ptr< int > one ) {
+        BOOST_TEST_REQUIRE( *one == 1 );
+    } );
+
+    stk.consume_all( []( std::unique_ptr< int > ) {} );
+}
