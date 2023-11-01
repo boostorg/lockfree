@@ -228,3 +228,33 @@ BOOST_AUTO_TEST_CASE( reserve_test )
     ms.reserve( 1 );
     ms.reserve_unsafe( 1 );
 }
+
+BOOST_AUTO_TEST_CASE( stack_with_allocator )
+{
+    using allocator_type = std::allocator< char >;
+
+    using stack_t = boost::lockfree::stack< char, boost::lockfree::allocator< allocator_type > >;
+    using stack_with_capacity_t
+        = boost::lockfree::stack< char, boost::lockfree::allocator< allocator_type >, boost::lockfree::capacity< 16 > >;
+
+    auto allocator = stack_t::allocator {};
+
+    {
+        stack_with_capacity_t stack_with_allocator {
+            allocator,
+        };
+        stack_t stack_with_size_and_allocator {
+            5,
+            allocator,
+        };
+    }
+    {
+        stack_with_capacity_t stack_with_allocator {
+            allocator_type {},
+        };
+        stack_t stack_with_size_and_allocator {
+            5,
+            allocator_type {},
+        };
+    }
+}

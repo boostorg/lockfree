@@ -253,6 +253,21 @@ public:
         initialize();
     }
 
+    /** Construct a variable-sized queue with a custom allocator
+     *
+     *  Allocate n nodes initially for the freelist
+     *
+     *  \pre Must \b not specify a capacity<> argument
+     * */
+    queue( size_type n, allocator const& alloc ) :
+        head_( tagged_node_handle( 0, 0 ) ),
+        tail_( tagged_node_handle( 0, 0 ) ),
+        pool( alloc, n + 1 )
+    {
+        BOOST_STATIC_ASSERT( !has_capacity );
+        initialize();
+    }
+
     /** \copydoc boost::lockfree::stack::reserve
      * */
     void reserve( size_type n )
