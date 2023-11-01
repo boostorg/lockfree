@@ -11,61 +11,51 @@
 
 #ifndef BOOST_DOXYGEN_INVOKED
 
-#include <cstddef> // size_t
+#    include <cstddef> // size_t
 
-#include <boost/config.hpp>
+#    include <boost/config.hpp>
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-#include <boost/parameter/aux_/void.hpp>
-#endif
+#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+#        include <boost/parameter/aux_/void.hpp>
+#    endif
 
-namespace boost    {
-namespace lockfree {
+namespace boost { namespace lockfree {
 
 // policies
-template <bool IsFixedSized>
+template < bool IsFixedSized >
 struct fixed_sized;
 
-template <size_t Size>
+template < size_t Size >
 struct capacity;
 
-template <class Alloc>
+template < class Alloc >
 struct allocator;
 
 
 // data structures
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template <typename T,
-          class A0 = boost::parameter::void_,
-          class A1 = boost::parameter::void_,
-          class A2 = boost::parameter::void_>
-#else
-template <typename T, typename ...Options>
-#endif
+#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
+#    else
+template < typename T, typename... Options >
+#    endif
 class queue;
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template <typename T,
-          class A0 = boost::parameter::void_,
-          class A1 = boost::parameter::void_,
-          class A2 = boost::parameter::void_>
-#else
-template <typename T, typename ...Options>
-#endif
+#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
+#    else
+template < typename T, typename... Options >
+#    endif
 class stack;
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template <typename T,
-          class A0 = boost::parameter::void_,
-          class A1 = boost::parameter::void_>
-#else
-template <typename T, typename ...Options>
-#endif
+#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_ >
+#    else
+template < typename T, typename... Options >
+#    endif
 class spsc_queue;
 
-}
-}
+}}     // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED
 
