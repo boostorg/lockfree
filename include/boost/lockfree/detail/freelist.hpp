@@ -85,7 +85,7 @@ public:
     }
 
     template < bool ThreadSafe, bool Bounded, typename ArgumentType >
-    T* construct( ArgumentType const& arg )
+    T* construct( const ArgumentType& arg )
     {
         T* node = allocate< ThreadSafe, Bounded >();
         if ( node )
@@ -93,8 +93,17 @@ public:
         return node;
     }
 
+    template < bool ThreadSafe, bool Bounded, typename ArgumentType >
+    T* construct( ArgumentType&& arg )
+    {
+        T* node = allocate< ThreadSafe, Bounded >();
+        if ( node )
+            new ( node ) T( std::forward< ArgumentType >( arg ) );
+        return node;
+    }
+
     template < bool ThreadSafe, bool Bounded, typename ArgumentType1, typename ArgumentType2 >
-    T* construct( ArgumentType1 const& arg1, ArgumentType2 const& arg2 )
+    T* construct( ArgumentType1&& arg1, ArgumentType2&& arg2 )
     {
         T* node = allocate< ThreadSafe, Bounded >();
         if ( node )
@@ -447,7 +456,7 @@ public:
     }
 
     template < bool ThreadSafe, bool Bounded, typename ArgumentType >
-    T* construct( ArgumentType const& arg )
+    T* construct( const ArgumentType& arg )
     {
         index_t node_index = allocate< ThreadSafe >();
         if ( node_index == null_handle() )
@@ -458,8 +467,20 @@ public:
         return node;
     }
 
+    template < bool ThreadSafe, bool Bounded, typename ArgumentType >
+    T* construct( ArgumentType&& arg )
+    {
+        index_t node_index = allocate< ThreadSafe >();
+        if ( node_index == null_handle() )
+            return NULL;
+
+        T* node = NodeStorage::nodes() + node_index;
+        new ( node ) T( std::forward< ArgumentType >( arg ) );
+        return node;
+    }
+
     template < bool ThreadSafe, bool Bounded, typename ArgumentType1, typename ArgumentType2 >
-    T* construct( ArgumentType1 const& arg1, ArgumentType2 const& arg2 )
+    T* construct( const ArgumentType1& arg1, const ArgumentType2& arg2 )
     {
         index_t node_index = allocate< ThreadSafe >();
         if ( node_index == null_handle() )

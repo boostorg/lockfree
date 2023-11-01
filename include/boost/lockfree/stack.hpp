@@ -65,7 +65,7 @@ class stack
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    BOOST_STATIC_ASSERT( std::is_copy_constructible< T >::value );
+    BOOST_STATIC_ASSERT( std::is_copy_constructible< T >::value || std::is_move_constructible< T >::value );
 
     typedef typename detail::stack_signature::bind< Options... >::type bound_args;
 
@@ -77,13 +77,18 @@ private:
 
     struct node
     {
-        node( T const& val ) :
+        node( const T& val ) :
             v( val )
         {}
 
+        node( T&& val ) :
+            v( std::forward< T >( val ) )
+        {}
+
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_t;
-        handle_t                                                                       next;
-        const T                                                                        v;
+
+        handle_t next;
+        T        v;
     };
 
     typedef typename detail::extract_allocator< bound_args, node >::type node_allocator;
@@ -305,6 +310,17 @@ private:
     }
 
     template < bool Bounded >
+    bool do_push( T&& v )
+    {
+        node* newnode = pool.template construct< true, Bounded >( std::forward< T >( v ) );
+        if ( newnode == 0 )
+            return false;
+
+        link_nodes_atomic( newnode, newnode );
+        return true;
+    }
+
+    template < bool Bounded >
     bool do_push( T const& v )
     {
         node* newnode = pool.template construct< true, Bounded >( v );
@@ -339,9 +355,15 @@ public:
      * \note Thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node will
      * be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
      * */
-    bool push( T const& v )
+    bool push( const T& v )
     {
         return do_push< false >( v );
+    }
+
+    /// \copydoc boost::lockfree::stack::push(const T& t)
+    bool push( T&& v )
+    {
+        return do_push< false >( std::forward< T >( v ) );
     }
 
     /** Pushes object t to the stack.
@@ -351,10 +373,17 @@ public:
      *
      * \note Thread-safe and non-blocking. If internal memory pool is exhausted, the push operation will fail
      * */
-    bool bounded_push( T const& v )
+    bool bounded_push( const T& v )
     {
         return do_push< true >( v );
     }
+
+    /// \copydoc boost::lockfree::stack::bounded_push(const T& t)
+    bool bounded_push( T&& v )
+    {
+        return do_push< true >( std::forward< T >( v ) );
+    }
+
 
     /** Pushes as many objects from the range [begin, end) as freelist node can be allocated.
      *
@@ -428,9 +457,20 @@ public:
      * will be allocated from the OS. This may not be lock-free.
      * \throws if memory allocator throws
      * */
-    bool unsynchronized_push( T const& v )
+    bool unsynchronized_push( const T& v )
     {
         node* newnode = pool.template construct< false, false >( v );
+        if ( newnode == 0 )
+            return false;
+
+        link_nodes_unsafe( newnode, newnode );
+        return true;
+    }
+
+    /// \copydoc boost::lockfree::stack::unsynchronized_push(const T& t)
+    bool unsynchronized_push( T&& v )
+    {
+        node* newnode = pool.template construct< false, false >( std::forward< T >( v ) );
         if ( newnode == 0 )
             return false;
 
@@ -499,8 +539,8 @@ public:
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
     bool pop( U& ret )
     {
-        return consume_one( [ & ]( const T& t ) {
-            ret = U( t );
+        return consume_one( [ & ]( T&& arg ) {
+            ret = std::forward< T >( arg );
         } );
     }
 
@@ -540,7 +580,7 @@ public:
         tagged_node_handle new_tos( pool.get_handle( new_tos_ptr ), old_tos.get_next_tag() );
 
         tos.store( new_tos, memory_order_relaxed );
-        detail::copy_payload( old_tos_pointer->v, ret );
+        ret = std::move( old_tos_pointer->v );
         pool.template destruct< false >( old_tos );
         return true;
     }
@@ -566,7 +606,7 @@ public:
             tagged_node_handle new_tos( old_tos_pointer->next, old_tos.get_next_tag() );
 
             if ( tos.compare_exchange_weak( old_tos, new_tos ) ) {
-                f( old_tos_pointer->v );
+                f( std::move( old_tos_pointer->v ) );
                 pool.template destruct< true >( old_tos );
                 return true;
             }
@@ -620,7 +660,7 @@ public:
 
         for ( ;; ) {
             node* node_pointer = pool.get_pointer( nodes_to_consume );
-            f( node_pointer->v );
+            f( std::move( node_pointer->v ) );
             element_count += 1;
 
             node* next_node = pool.get_pointer( node_pointer->next );
@@ -685,7 +725,7 @@ public:
 
         for ( ;; ) {
             node* node_pointer = pool.get_pointer( nodes_in_reversed_order );
-            f( node_pointer->v );
+            f( std::move( node_pointer->v ) );
             element_count += 1;
 
             node* next_node = pool.get_pointer( node_pointer->next );
