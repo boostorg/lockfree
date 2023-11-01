@@ -52,6 +52,7 @@ struct queue_stress_tester
 
             bool inserted = data.insert( id );
             assert( inserted );
+            (void)inserted;
 
             if ( Bounded )
                 while ( stk.bounded_push( id ) == false ) {
@@ -83,6 +84,8 @@ struct queue_stress_tester
 
         bool erased   = data.erase( id );
         bool inserted = dequeued.insert( id );
+        (void)erased;
+        (void)inserted;
         assert( erased );
         assert( inserted );
         ++pop_count;

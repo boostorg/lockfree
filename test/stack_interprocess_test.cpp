@@ -5,7 +5,6 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <cstdlib> //std::system
-#include <sstream>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/lockfree/stack.hpp>
@@ -52,6 +51,7 @@ int main( int argc, char* argv[] )
         int from_queue;
         for ( int i = 0; i != 1024; ++i ) {
             bool success = queue->pop( from_queue );
+            (void)success;
             assert( success );
             assert( from_queue == 1023 - i );
         }
