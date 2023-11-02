@@ -278,7 +278,7 @@ jobs:
             cxxstd: "11,14,17,2a"
             addrmd: 64
             cxxflags: "cxxflags=-Wa,-mbig-obj"
-            supported: "Too many unknowns to get this compiler working - gcc-8.1"
+            supported: true
             os: windows-2019
 
     needs: [runner-selection]
