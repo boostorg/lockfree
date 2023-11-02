@@ -95,7 +95,7 @@ struct spsc_queue_tester
     {
         running = true;
 
-        BOOST_REQUIRE( sf.empty() );
+        BOOST_TEST_REQUIRE( sf.empty() );
 
         boost::thread reader( boost::bind( &spsc_queue_tester::get, this ) );
         boost::thread writer( boost::bind( &spsc_queue_tester::add, this ) );
@@ -106,10 +106,10 @@ struct spsc_queue_tester
 
         reader.join();
 
-        BOOST_REQUIRE_EQUAL( received_nodes, nodes_per_thread );
-        BOOST_REQUIRE_EQUAL( spsc_queue_cnt, 0 );
-        BOOST_REQUIRE( sf.empty() );
-        BOOST_REQUIRE( working_set.count_nodes() == 0 );
+        BOOST_TEST_REQUIRE( received_nodes == nodes_per_thread );
+        BOOST_TEST_REQUIRE( spsc_queue_cnt == 0 );
+        BOOST_TEST_REQUIRE( sf.empty() );
+        BOOST_TEST_REQUIRE( working_set.count_nodes() == 0 );
     }
 };
 
@@ -210,10 +210,10 @@ struct spsc_queue_tester_buffering
 
         reader.join();
 
-        BOOST_REQUIRE_EQUAL( received_nodes, nodes_per_thread );
-        BOOST_REQUIRE_EQUAL( spsc_queue_cnt, 0 );
-        BOOST_REQUIRE( sf.empty() );
-        BOOST_REQUIRE( working_set.count_nodes() == 0 );
+        BOOST_TEST_REQUIRE( received_nodes == nodes_per_thread );
+        BOOST_TEST_REQUIRE( spsc_queue_cnt == 0 );
+        BOOST_TEST_REQUIRE( sf.empty() );
+        BOOST_TEST_REQUIRE( working_set.count_nodes() == 0 );
     }
 };
 

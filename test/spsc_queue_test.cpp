@@ -27,36 +27,36 @@ BOOST_AUTO_TEST_CASE( simple_spsc_queue_test )
 {
     spsc_queue< int, capacity< 64 > > f;
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( 1 );
     f.push( 2 );
 
     int i1( 0 ), i2( 0 );
 
-    BOOST_REQUIRE( f.pop( i1 ) );
-    BOOST_REQUIRE_EQUAL( i1, 1 );
+    BOOST_TEST_REQUIRE( f.pop( i1 ) );
+    BOOST_TEST_REQUIRE( i1 == 1 );
 
-    BOOST_REQUIRE( f.pop( i2 ) );
-    BOOST_REQUIRE_EQUAL( i2, 2 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.pop( i2 ) );
+    BOOST_TEST_REQUIRE( i2 == 2 );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( simple_spsc_queue_test_compile_time_size )
 {
     spsc_queue< int > f( 64 );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( 1 );
     f.push( 2 );
 
     int i1( 0 ), i2( 0 );
 
-    BOOST_REQUIRE( f.pop( i1 ) );
-    BOOST_REQUIRE_EQUAL( i1, 1 );
+    BOOST_TEST_REQUIRE( f.pop( i1 ) );
+    BOOST_TEST_REQUIRE( i1 == 1 );
 
-    BOOST_REQUIRE( f.pop( i2 ) );
-    BOOST_REQUIRE_EQUAL( i2, 2 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.pop( i2 ) );
+    BOOST_TEST_REQUIRE( i2 == 2 );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( ranged_push_test )
@@ -65,14 +65,14 @@ BOOST_AUTO_TEST_CASE( ranged_push_test )
 
     int data[ 2 ] = { 1, 2 };
 
-    BOOST_REQUIRE_EQUAL( stk.push( data, data + 2 ), data + 2 );
+    BOOST_TEST_REQUIRE( stk.push( data, data + 2 ) == data + 2 );
 
     int out;
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( !stk.pop( out ) );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( !stk.pop( out ) );
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_consume_one_test )
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_one_test )
     spsc_queue< int > f( 64 );
 
     BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -90,18 +90,18 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_one_test )
     bool success2 = f.consume_one( test_equal( 2 ) );
 #else
     bool success1 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 1 );
+        BOOST_TEST_REQUIRE( i == 1 );
     } );
 
     bool success2 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 2 );
+        BOOST_TEST_REQUIRE( i == 2 );
     } );
 #endif
 
-    BOOST_REQUIRE( success1 );
-    BOOST_REQUIRE( success2 );
+    BOOST_TEST_REQUIRE( success1 );
+    BOOST_TEST_REQUIRE( success2 );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_consume_all_test )
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_all_test )
     spsc_queue< int > f( 64 );
 
     BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -120,9 +120,9 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_all_test )
     size_t consumed = f.consume_all( []( int i ) {} );
 #endif
 
-    BOOST_REQUIRE_EQUAL( consumed, 2u );
+    BOOST_TEST_REQUIRE( consumed == 2u );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 enum
@@ -137,26 +137,26 @@ BOOST_AUTO_TEST_CASE( spsc_queue_capacity_test )
 {
     spsc_queue< int, capacity< 2 > > f;
 
-    BOOST_REQUIRE( f.push( 1 ) );
-    BOOST_REQUIRE( f.push( 2 ) );
-    BOOST_REQUIRE( !f.push( 3 ) );
+    BOOST_TEST_REQUIRE( f.push( 1 ) );
+    BOOST_TEST_REQUIRE( f.push( 2 ) );
+    BOOST_TEST_REQUIRE( !f.push( 3 ) );
 
     spsc_queue< int > g( 2 );
 
-    BOOST_REQUIRE( g.push( 1 ) );
-    BOOST_REQUIRE( g.push( 2 ) );
-    BOOST_REQUIRE( !g.push( 3 ) );
+    BOOST_TEST_REQUIRE( g.push( 1 ) );
+    BOOST_TEST_REQUIRE( g.push( 2 ) );
+    BOOST_TEST_REQUIRE( !g.push( 3 ) );
 }
 
 template < typename QueueType >
 void spsc_queue_avail_test_run( QueueType& q )
 {
-    BOOST_REQUIRE_EQUAL( q.write_available(), 16 );
-    BOOST_REQUIRE_EQUAL( q.read_available(), 0 );
+    BOOST_TEST_REQUIRE( q.write_available() == 16 );
+    BOOST_TEST_REQUIRE( q.read_available() == 0 );
 
     for ( size_t i = 0; i != 8; ++i ) {
-        BOOST_REQUIRE_EQUAL( q.write_available(), 16 - i );
-        BOOST_REQUIRE_EQUAL( q.read_available(), i );
+        BOOST_TEST_REQUIRE( q.write_available() == 16 - i );
+        BOOST_TEST_REQUIRE( q.read_available() == i );
 
         q.push( 1 );
     }
@@ -166,8 +166,8 @@ void spsc_queue_avail_test_run( QueueType& q )
     while ( q.pop( dummy ) ) {}
 
     for ( size_t i = 0; i != 16; ++i ) {
-        BOOST_REQUIRE_EQUAL( q.write_available(), 16 - i );
-        BOOST_REQUIRE_EQUAL( q.read_available(), i );
+        BOOST_TEST_REQUIRE( q.write_available() == 16 - i );
+        BOOST_TEST_REQUIRE( q.read_available() == i );
 
         q.push( 1 );
     }
@@ -195,22 +195,22 @@ void spsc_queue_buffer_push_return_value( void )
         data[ i ] = (int)i * 2;
 
     switch ( EnqueueMode ) {
-    case pointer_and_size:   BOOST_REQUIRE_EQUAL( rb.push( data, xqueue_size ), xqueue_size ); break;
+    case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == xqueue_size ); break;
 
-    case reference_to_array: BOOST_REQUIRE_EQUAL( rb.push( data ), xqueue_size ); break;
+    case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == xqueue_size ); break;
 
-    case iterator_pair:      BOOST_REQUIRE_EQUAL( rb.push( data, data + xqueue_size ), data + xqueue_size ); break;
+    case iterator_pair:      BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + xqueue_size ); break;
 
     default:                 assert( false );
     }
 
     switch ( EnqueueMode ) {
-    case pointer_and_size:   BOOST_REQUIRE_EQUAL( rb.push( data, xqueue_size ), buffer_size - xqueue_size ); break;
+    case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == buffer_size - xqueue_size ); break;
 
-    case reference_to_array: BOOST_REQUIRE_EQUAL( rb.push( data ), buffer_size - xqueue_size ); break;
+    case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == buffer_size - xqueue_size ); break;
 
     case iterator_pair:
-        BOOST_REQUIRE_EQUAL( rb.push( data, data + xqueue_size ), data + buffer_size - xqueue_size );
+        BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + buffer_size - xqueue_size );
         break;
 
     default: assert( false );
@@ -237,21 +237,21 @@ void spsc_queue_buffer_push( void )
     std::vector< int > vdata( data, data + xqueue_size );
 
     for ( int i = 0; i != NumberOfIterations; ++i ) {
-        BOOST_REQUIRE( rb.empty() );
+        BOOST_TEST_REQUIRE( rb.empty() );
         switch ( EnqueueMode ) {
-        case pointer_and_size:   BOOST_REQUIRE_EQUAL( rb.push( data, xqueue_size ), xqueue_size ); break;
+        case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == xqueue_size ); break;
 
-        case reference_to_array: BOOST_REQUIRE_EQUAL( rb.push( data ), xqueue_size ); break;
+        case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == xqueue_size ); break;
 
-        case iterator_pair:      BOOST_REQUIRE_EQUAL( rb.push( data, data + xqueue_size ), data + xqueue_size ); break;
+        case iterator_pair:      BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + xqueue_size ); break;
 
         default:                 assert( false );
         }
 
         int out[ xqueue_size ];
-        BOOST_REQUIRE_EQUAL( rb.pop( out, xqueue_size ), xqueue_size );
+        BOOST_TEST_REQUIRE( rb.pop( out, xqueue_size ) == xqueue_size );
         for ( size_t i = 0; i != xqueue_size; ++i )
-            BOOST_REQUIRE_EQUAL( data[ i ], out[ i ] );
+            BOOST_TEST_REQUIRE( data[ i ] == out[ i ] );
     }
 }
 
@@ -275,29 +275,29 @@ void spsc_queue_buffer_pop( void )
     std::vector< int > vdata( data, data + xqueue_size );
 
     for ( int i = 0; i != NumberOfIterations; ++i ) {
-        BOOST_REQUIRE( rb.empty() );
-        BOOST_REQUIRE_EQUAL( rb.push( data ), xqueue_size );
+        BOOST_TEST_REQUIRE( rb.empty() );
+        BOOST_TEST_REQUIRE( rb.push( data ) == xqueue_size );
 
         int           out[ xqueue_size ];
         vector< int > vout;
 
         switch ( EnqueueMode ) {
-        case pointer_and_size:   BOOST_REQUIRE_EQUAL( rb.pop( out, xqueue_size ), xqueue_size ); break;
+        case pointer_and_size:   BOOST_TEST_REQUIRE( rb.pop( out, xqueue_size ) == xqueue_size ); break;
 
-        case reference_to_array: BOOST_REQUIRE_EQUAL( rb.pop( out ), xqueue_size ); break;
+        case reference_to_array: BOOST_TEST_REQUIRE( rb.pop( out ) == xqueue_size ); break;
 
-        case output_iterator_:   BOOST_REQUIRE_EQUAL( rb.pop( std::back_inserter( vout ) ), xqueue_size ); break;
+        case output_iterator_:   BOOST_TEST_REQUIRE( rb.pop( std::back_inserter( vout ) ) == xqueue_size ); break;
 
         default:                 assert( false );
         }
 
         if ( EnqueueMode == output_iterator_ ) {
-            BOOST_REQUIRE_EQUAL( vout.size(), xqueue_size );
+            BOOST_TEST_REQUIRE( vout.size() == xqueue_size );
             for ( size_t i = 0; i != xqueue_size; ++i )
-                BOOST_REQUIRE_EQUAL( data[ i ], vout[ i ] );
+                BOOST_TEST_REQUIRE( data[ i ] == vout[ i ] );
         } else {
             for ( size_t i = 0; i != xqueue_size; ++i )
-                BOOST_REQUIRE_EQUAL( data[ i ], out[ i ] );
+                BOOST_TEST_REQUIRE( data[ i ] == out[ i ] );
         }
     }
 }
@@ -321,31 +321,31 @@ void spsc_queue_front_pop( Queue& queue )
     int&       rfront  = queue.front();
     const int& crfront = queue.front();
 
-    BOOST_REQUIRE_EQUAL( 1, rfront );
-    BOOST_REQUIRE_EQUAL( 1, crfront );
+    BOOST_TEST_REQUIRE( 1 == rfront );
+    BOOST_TEST_REQUIRE( 1 == crfront );
 
     int front = 0;
 
     // access element pushed first
     front = queue.front();
-    BOOST_REQUIRE_EQUAL( 1, front );
+    BOOST_TEST_REQUIRE( 1 == front );
 
     // front is still the same
     front = queue.front();
-    BOOST_REQUIRE_EQUAL( 1, front );
+    BOOST_TEST_REQUIRE( 1 == front );
 
     queue.pop();
 
     front = queue.front();
-    BOOST_REQUIRE_EQUAL( 2, front );
+    BOOST_TEST_REQUIRE( 2 == front );
 
     queue.pop();                // pop 2
 
     bool pop_ret = queue.pop(); // pop 3
-    BOOST_REQUIRE( pop_ret );
+    BOOST_TEST_REQUIRE( pop_ret );
 
     pop_ret = queue.pop(); // pop on empty queue
-    BOOST_REQUIRE( !pop_ret );
+    BOOST_TEST_REQUIRE( !pop_ret );
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_buffer_front_and_pop_runtime_sized_test )
@@ -364,11 +364,11 @@ BOOST_AUTO_TEST_CASE( spsc_queue_reset_test )
 {
     spsc_queue< int, capacity< 64 > > f;
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( 1 );
     f.push( 2 );
 
     f.reset();
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }

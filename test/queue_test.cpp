@@ -28,40 +28,40 @@ BOOST_AUTO_TEST_CASE( simple_queue_test )
 {
     queue< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
+    BOOST_TEST_WARN( f.is_lock_free() );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( 1 );
     f.push( 2 );
 
     int i1( 0 ), i2( 0 );
 
-    BOOST_REQUIRE( f.pop( i1 ) );
-    BOOST_REQUIRE_EQUAL( i1, 1 );
+    BOOST_TEST_REQUIRE( f.pop( i1 ) );
+    BOOST_TEST_REQUIRE( i1 == 1 );
 
-    BOOST_REQUIRE( f.pop( i2 ) );
-    BOOST_REQUIRE_EQUAL( i2, 2 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.pop( i2 ) );
+    BOOST_TEST_REQUIRE( i2 == 2 );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( simple_queue_test_capacity )
 {
     queue< int, capacity< 64 > > f;
 
-    BOOST_WARN( f.is_lock_free() );
+    BOOST_TEST_WARN( f.is_lock_free() );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( 1 );
     f.push( 2 );
 
     int i1( 0 ), i2( 0 );
 
-    BOOST_REQUIRE( f.pop( i1 ) );
-    BOOST_REQUIRE_EQUAL( i1, 1 );
+    BOOST_TEST_REQUIRE( f.pop( i1 ) );
+    BOOST_TEST_REQUIRE( i1 == 1 );
 
-    BOOST_REQUIRE( f.pop( i2 ) );
-    BOOST_REQUIRE_EQUAL( i2, 2 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.pop( i2 ) );
+    BOOST_TEST_REQUIRE( i2 == 2 );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 
@@ -69,20 +69,20 @@ BOOST_AUTO_TEST_CASE( unsafe_queue_test )
 {
     queue< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     int i1( 0 ), i2( 0 );
 
     f.unsynchronized_push( 1 );
     f.unsynchronized_push( 2 );
 
-    BOOST_REQUIRE( f.unsynchronized_pop( i1 ) );
-    BOOST_REQUIRE_EQUAL( i1, 1 );
+    BOOST_TEST_REQUIRE( f.unsynchronized_pop( i1 ) );
+    BOOST_TEST_REQUIRE( i1 == 1 );
 
-    BOOST_REQUIRE( f.unsynchronized_pop( i2 ) );
-    BOOST_REQUIRE_EQUAL( i2, 2 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.unsynchronized_pop( i2 ) );
+    BOOST_TEST_REQUIRE( i2 == 2 );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE( queue_consume_one_test )
 {
     queue< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -101,26 +101,26 @@ BOOST_AUTO_TEST_CASE( queue_consume_one_test )
     bool success2 = f.consume_one( test_equal( 2 ) );
 #else
     bool success1 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 1 );
+        BOOST_TEST_REQUIRE( i == 1 );
     } );
 
     bool success2 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 2 );
+        BOOST_TEST_REQUIRE( i == 2 );
     } );
 #endif
 
-    BOOST_REQUIRE( success1 );
-    BOOST_REQUIRE( success2 );
+    BOOST_TEST_REQUIRE( success1 );
+    BOOST_TEST_REQUIRE( success2 );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( queue_consume_all_test )
 {
     queue< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -131,16 +131,16 @@ BOOST_AUTO_TEST_CASE( queue_consume_all_test )
     size_t consumed = f.consume_all( []( int i ) {} );
 #endif
 
-    BOOST_REQUIRE_EQUAL( consumed, 2u );
+    BOOST_TEST_REQUIRE( consumed == 2u );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 
 BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
 {
     queue< int* > f( 128 );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
     f.push( new int( 1 ) );
     f.push( new int( 2 ) );
     f.push( new int( 3 ) );
@@ -149,16 +149,16 @@ BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
     {
         int* i1;
 
-        BOOST_REQUIRE( f.pop( i1 ) );
-        BOOST_REQUIRE_EQUAL( *i1, 1 );
+        BOOST_TEST_REQUIRE( f.pop( i1 ) );
+        BOOST_TEST_REQUIRE( *i1 == 1 );
         delete i1;
     }
 
 
     {
         boost::shared_ptr< int > i2;
-        BOOST_REQUIRE( f.pop( i2 ) );
-        BOOST_REQUIRE_EQUAL( *i2, 2 );
+        BOOST_TEST_REQUIRE( f.pop( i2 ) );
+        BOOST_TEST_REQUIRE( *i2 == 2 );
     }
 
     {
@@ -167,20 +167,20 @@ BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
 #else
         auto_ptr< int > i3;
 #endif
-        BOOST_REQUIRE( f.pop( i3 ) );
+        BOOST_TEST_REQUIRE( f.pop( i3 ) );
 
-        BOOST_REQUIRE_EQUAL( *i3, 3 );
+        BOOST_TEST_REQUIRE( *i3 == 3 );
     }
 
     {
         boost::shared_ptr< int > i4;
-        BOOST_REQUIRE( f.pop( i4 ) );
+        BOOST_TEST_REQUIRE( f.pop( i4 ) );
 
-        BOOST_REQUIRE_EQUAL( *i4, 4 );
+        BOOST_TEST_REQUIRE( *i4 == 4 );
     }
 
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( reserve_test )
