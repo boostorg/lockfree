@@ -24,11 +24,11 @@ BOOST_AUTO_TEST_CASE( simple_stack_test )
     stk.push( 1 );
     stk.push( 2 );
     long out;
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.pop( out ) );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.pop( out ) );
 }
 
 BOOST_AUTO_TEST_CASE( unsafe_stack_test )
@@ -38,11 +38,11 @@ BOOST_AUTO_TEST_CASE( unsafe_stack_test )
     stk.unsynchronized_push( 1 );
     stk.unsynchronized_push( 2 );
     long out;
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
 }
 
 BOOST_AUTO_TEST_CASE( ranged_push_test )
@@ -51,14 +51,14 @@ BOOST_AUTO_TEST_CASE( ranged_push_test )
 
     long data[ 2 ] = { 1, 2 };
 
-    BOOST_REQUIRE_EQUAL( stk.push( data, data + 2 ), data + 2 );
+    BOOST_TEST_REQUIRE( stk.push( data, data + 2 ) == data + 2 );
 
     long out;
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
 }
 
 BOOST_AUTO_TEST_CASE( ranged_unsynchronized_push_test )
@@ -67,14 +67,14 @@ BOOST_AUTO_TEST_CASE( ranged_unsynchronized_push_test )
 
     long data[ 2 ] = { 1, 2 };
 
-    BOOST_REQUIRE_EQUAL( stk.unsynchronized_push( data, data + 2 ), data + 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_push( data, data + 2 ) == data + 2 );
 
     long out;
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.unsynchronized_pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
 }
 
 BOOST_AUTO_TEST_CASE( fixed_size_stack_test )
@@ -84,12 +84,12 @@ BOOST_AUTO_TEST_CASE( fixed_size_stack_test )
     stk.push( 1 );
     stk.push( 2 );
     long out;
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.pop( out ) );
-    BOOST_REQUIRE( stk.empty() );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.pop( out ) );
+    BOOST_TEST_REQUIRE( stk.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( fixed_size_stack_test_exhausted )
@@ -98,14 +98,14 @@ BOOST_AUTO_TEST_CASE( fixed_size_stack_test_exhausted )
 
     stk.push( 1 );
     stk.push( 2 );
-    BOOST_REQUIRE( !stk.push( 3 ) );
+    BOOST_TEST_REQUIRE( !stk.push( 3 ) );
     long out;
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.pop( out ) );
-    BOOST_REQUIRE( stk.empty() );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.pop( out ) );
+    BOOST_TEST_REQUIRE( stk.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( bounded_stack_test_exhausted )
@@ -114,22 +114,22 @@ BOOST_AUTO_TEST_CASE( bounded_stack_test_exhausted )
 
     stk.bounded_push( 1 );
     stk.bounded_push( 2 );
-    BOOST_REQUIRE( !stk.bounded_push( 3 ) );
+    BOOST_TEST_REQUIRE( !stk.bounded_push( 3 ) );
     long out;
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 2 );
-    BOOST_REQUIRE( stk.pop( out ) );
-    BOOST_REQUIRE_EQUAL( out, 1 );
-    BOOST_REQUIRE( !stk.pop( out ) );
-    BOOST_REQUIRE( stk.empty() );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 2 );
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 1 );
+    BOOST_TEST_REQUIRE( !stk.pop( out ) );
+    BOOST_TEST_REQUIRE( stk.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( stack_consume_one_test )
 {
     boost::lockfree::stack< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -139,26 +139,26 @@ BOOST_AUTO_TEST_CASE( stack_consume_one_test )
     bool success2 = f.consume_one( test_equal( 1 ) );
 #else
     bool success1 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 2 );
+        BOOST_TEST_REQUIRE( i == 2 );
     } );
 
     bool success2 = f.consume_one( []( int i ) {
-        BOOST_REQUIRE_EQUAL( i, 1 );
+        BOOST_TEST_REQUIRE( i == 1 );
     } );
 #endif
 
-    BOOST_REQUIRE( success1 );
-    BOOST_REQUIRE( success2 );
+    BOOST_TEST_REQUIRE( success1 );
+    BOOST_TEST_REQUIRE( success2 );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( stack_consume_all_test )
 {
     boost::lockfree::stack< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -169,17 +169,17 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_test )
     size_t consumed = f.consume_all( []( int i ) {} );
 #endif
 
-    BOOST_REQUIRE_EQUAL( consumed, 2u );
+    BOOST_TEST_REQUIRE( consumed == 2u );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_test )
 {
     boost::lockfree::stack< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -191,9 +191,9 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_test )
     size_t consumed = f.consume_all_atomic( []( int i ) {} );
 #endif
 
-    BOOST_REQUIRE_EQUAL( consumed, 3u );
+    BOOST_TEST_REQUIRE( consumed == 3u );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 
@@ -201,8 +201,8 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_reversed_test )
 {
     boost::lockfree::stack< int > f( 64 );
 
-    BOOST_WARN( f.is_lock_free() );
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_WARN( f.is_lock_free() );
+    BOOST_TEST_REQUIRE( f.empty() );
 
     f.push( 1 );
     f.push( 2 );
@@ -214,9 +214,9 @@ BOOST_AUTO_TEST_CASE( stack_consume_all_atomic_reversed_test )
     size_t consumed = f.consume_all_atomic_reversed( []( int i ) {} );
 #endif
 
-    BOOST_REQUIRE_EQUAL( consumed, 3u );
+    BOOST_TEST_REQUIRE( consumed == 3u );
 
-    BOOST_REQUIRE( f.empty() );
+    BOOST_TEST_REQUIRE( f.empty() );
 }
 
 

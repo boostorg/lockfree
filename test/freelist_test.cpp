@@ -62,7 +62,7 @@ void run_test( void )
 
     for ( int i = 0; i != 4; ++i ) {
         dummy* allocated = fl.template construct< threadsafe, bounded >();
-        BOOST_REQUIRE( nodes.find( allocated ) == nodes.end() );
+        BOOST_TEST_REQUIRE( ( nodes.find( allocated ) == nodes.end() ) );
         nodes.insert( allocated );
     }
 
@@ -107,7 +107,7 @@ void oom_test( void )
         fl.template construct< threadsafe, bounded >();
 
     dummy* allocated = fl.template construct< threadsafe, bounded >();
-    BOOST_REQUIRE( allocated == NULL );
+    BOOST_TEST_REQUIRE( allocated == (dummy*)NULL );
 }
 
 BOOST_AUTO_TEST_CASE( oom_tests )

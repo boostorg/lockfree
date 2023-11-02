@@ -36,6 +36,7 @@ rule test_all
         <library>../../thread/build//boost_thread/
         <threading>multi
         <link>static
+        <define>BOOST_TEST_NO_OLD_TOOLS
       ] ;
    }
 

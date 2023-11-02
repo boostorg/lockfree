@@ -32,6 +32,8 @@ foreach(Test ${Tests})
         Boost::foreach
     )
 
+    target_compile_definitions(boost_lockfree_${Test} PRIVATE BOOST_TEST_NO_OLD_TOOLS )
+
     # CTest Target
     add_test(NAME boost_lockfree_${Test} COMMAND boost_lockfree_${Test})
     add_dependencies(boost_lockfree_all_tests boost_lockfree_${Test} )

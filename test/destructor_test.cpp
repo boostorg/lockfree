@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE( stack_instance_deleter_test )
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }
 
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_instance_deleter_test )
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_test )
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_test )
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }
 
 struct no_default_init_tester
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( stack_instance_deleter_no_default_init_test )
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }
 
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_instance_deleter_no_default_init_test )
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }
 
 BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_no_default_init_test )
@@ -147,5 +147,5 @@ BOOST_AUTO_TEST_CASE( spsc_queue_fixed_sized_instance_deleter_no_default_init_te
     }
 
     assert( g_instance_counter == 0 );
-    BOOST_REQUIRE( g_instance_counter == 0 );
+    BOOST_TEST_REQUIRE( g_instance_counter == 0 );
 }

@@ -91,7 +91,7 @@ struct test_equal
 
     void operator()( int arg ) const
     {
-        BOOST_REQUIRE_EQUAL( arg, i );
+        BOOST_TEST_REQUIRE( arg == i );
     }
 
     int i;
