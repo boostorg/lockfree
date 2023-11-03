@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include <boost/array.hpp>
+#include <boost/test/test_tools.hpp>
 #include <boost/thread.hpp>
 
 namespace impl {

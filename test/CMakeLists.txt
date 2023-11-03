@@ -23,7 +23,9 @@ set(Tests
 
 foreach(Test ${Tests})
     # Test target
-    add_executable(boost_lockfree_${Test} ${Test}.cpp )
+    add_executable(boost_lockfree_${Test} ${Test}.cpp test_common.hpp test_helpers.hpp )
+    source_group( TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${Test}.cpp test_common.hpp test_helpers.hpp)
+
     target_include_directories(boost_lockfree_${Test} PRIVATE . )
     target_link_libraries(boost_lockfree_${Test} PRIVATE
         Boost::lockfree

@@ -8,11 +8,12 @@
 #define BOOST_LOCKFREE_TEST_HELPERS
 
 #include <boost/array.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/lockfree/detail/atomic.hpp>
+#include <boost/test/test_tools.hpp>
 #include <boost/thread.hpp>
 #include <set>
 
-#include <boost/cstdint.hpp>
 
 template < typename int_type >
 int_type generate_id( void )
