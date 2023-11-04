@@ -44,12 +44,15 @@
 
 
 namespace boost { namespace lockfree {
+
+#ifndef BOOST_DOXYGEN_INVOKED
 namespace detail {
 
 typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boost::parameter::optional< tag::capacity > >
     queue_signature;
 
 } /* namespace detail */
+#endif
 
 
 /** The queue class provides a multi-writer/multi-reader queue, pushing and popping is lock-free,
