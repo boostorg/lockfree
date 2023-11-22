@@ -54,6 +54,17 @@ target_link_libraries(boost_lockfree
     Boost::utility
 )
 
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_link_libraries(boost_lockfree
+            INTERFACE atomic
+        )
+    endif()
+endif()
+
+
+
 if( BOOST_LOCKFREE_BUILD_TESTS )
     add_subdirectory(test)
 endif()
