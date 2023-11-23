@@ -2,6 +2,12 @@ if(NOT TARGET boost_lockfree_all_tests)
     add_custom_target(boost_lockfree_all_tests)
 endif()
 
+add_library(boost_lockfree_test_common INTERFACE)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
+  target_sources(boost_lockfree_test_common PUBLIC FILE_SET HEADERS FILES test_common.hpp test_helpers.hpp )
+  source_group( TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES test_common.hpp test_helpers.hpp)
+endif()
 
 set(Tests
     destructor_test
@@ -23,8 +29,8 @@ set(Tests
 
 foreach(Test ${Tests})
     # Test target
-    add_executable(boost_lockfree_${Test} ${Test}.cpp test_common.hpp test_helpers.hpp )
-    source_group( TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${Test}.cpp test_common.hpp test_helpers.hpp)
+    add_executable(boost_lockfree_${Test} ${Test}.cpp )
+    source_group( TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${Test}.cpp)
 
     target_include_directories(boost_lockfree_${Test} PRIVATE . )
     target_link_libraries(boost_lockfree_${Test} PRIVATE
