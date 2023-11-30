@@ -27,6 +27,7 @@
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
+#include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
@@ -741,6 +742,42 @@ public:
             ret = std::forward< T >( t );
         } );
     }
+
+#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
+    /** Pops object from spsc_queue, returning a std::optional<>
+     *
+     * \returns `std::optional` with value if successful, `std::nullopt` if spsc_queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    std::optional< T > pop( uses_optional_t )
+    {
+        T to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+
+    /** Pops object from spsc_queue, returning a std::optional<>
+     *
+     * \pre type T must be convertible to U
+     * \returns `std::optional` with value if successful, `std::nullopt` if spsc_queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    template < typename U >
+    std::optional< U > pop( uses_optional_t )
+    {
+        U to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+#endif
 
     /** Pushes as many objects from the array t as there is space.
      *

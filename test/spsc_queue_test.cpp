@@ -380,3 +380,19 @@ BOOST_AUTO_TEST_CASE( move_semantics )
 
     stk.consume_all( []( std::unique_ptr< int > ) {} );
 }
+
+#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL )
+
+BOOST_AUTO_TEST_CASE( queue_uses_optional )
+{
+    boost::lockfree::spsc_queue< int > stk( 5 );
+
+    bool pop_to_nullopt = stk.pop( boost::lockfree::uses_optional ) == std::nullopt;
+    BOOST_TEST_REQUIRE( pop_to_nullopt );
+
+    stk.push( 53 );
+    bool pop_to_optional = stk.pop( boost::lockfree::uses_optional ) == 53;
+    BOOST_TEST_REQUIRE( pop_to_optional );
+}
+
+#endif
