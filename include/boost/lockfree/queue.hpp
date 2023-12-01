@@ -23,6 +23,7 @@
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
+#include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
@@ -463,6 +464,42 @@ public:
             }
         }
     }
+
+#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
+    /** Pops object from queue, returning a std::optional<>
+     *
+     * \returns `std::optional` with value if successful, `std::nullopt` if queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    std::optional< T > pop( uses_optional_t )
+    {
+        T to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+
+    /** Pops object from queue, returning a std::optional<>
+     *
+     * \pre type T must be convertible to U
+     * \returns `std::optional` with value if successful, `std::nullopt` if queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    template < typename U >
+    std::optional< U > pop( uses_optional_t )
+    {
+        U to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+#endif
 
     /** Pops object from queue.
      *
