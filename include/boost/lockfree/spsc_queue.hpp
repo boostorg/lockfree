@@ -609,9 +609,12 @@ struct make_ringbuffer
  *
  *  \b Requirements:
  *  - T must have a default constructor
- *  - T must be copyable
+ *  - T must be copyable or movable
  * */
 template < typename T, typename... Options >
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_default_constructible_v< T >, std::is_move_assignable_v< T > || std::is_copy_assignable_v< T > )
+#endif
 class spsc_queue : public detail::make_ringbuffer< T, Options... >::ringbuffer_type
 {
 private:
@@ -637,6 +640,9 @@ public:
      *  \pre spsc_queue must be configured to be sized at compile-time
      */
     spsc_queue( void )
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+        requires( !runtime_sized )
+#endif
     {
         // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
         // this function and this function may be compiled even when it isn't being used.

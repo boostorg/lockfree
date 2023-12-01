@@ -82,6 +82,11 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *
  * */
 template < typename T, typename... Options >
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T >,
+              std::is_trivially_assignable_v< T&, T >,
+              std::is_trivially_destructible_v< T > )
+#endif
 class queue
 {
 private:
@@ -167,7 +172,11 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
-    queue( void ) :
+    queue( void )
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+        requires( has_capacity )
+#endif
+        :
         head_( tagged_node_handle( 0, 0 ) ),
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( node_allocator(), capacity )
