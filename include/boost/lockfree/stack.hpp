@@ -59,9 +59,12 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *    Specifies the allocator that is used for the internal freelist
  *
  *  \b Requirements:
- *  - T must have a copy constructor
+ *  - T must have a copy constructor or a move constructor
  * */
 template < typename T, typename... Options >
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T > || std::is_move_assignable_v< T > )
+#endif
 class stack
 {
 private:
@@ -132,7 +135,11 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
-    explicit stack( void ) :
+    explicit stack( void )
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+        requires( has_capacity )
+#endif
+        :
         pool( node_allocator(), capacity )
     {
         // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling

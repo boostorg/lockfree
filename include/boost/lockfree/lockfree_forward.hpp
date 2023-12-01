@@ -11,7 +11,8 @@
 
 #ifndef BOOST_DOXYGEN_INVOKED
 
-#    include <cstddef> // size_t
+#    include <cstddef>
+#    include <type_traits>
 
 #    include <boost/config.hpp>
 
@@ -31,14 +32,24 @@ struct allocator;
 // data structures
 
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T >,
+              std::is_trivially_assignable_v< T&, T >,
+              std::is_trivially_destructible_v< T > )
+#    endif
 class queue;
 
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T > || std::is_move_assignable_v< T > )
+#    endif
 class stack;
 
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_default_constructible_v< T >, std::is_move_assignable_v< T > || std::is_copy_assignable_v< T > )
+#    endif
 class spsc_queue;
-
 }}     // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED
