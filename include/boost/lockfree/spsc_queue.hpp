@@ -92,7 +92,8 @@ protected:
         return write_available( write_index, read_index, max_size );
     }
 
-    bool push( T const& t, T* buffer, size_t max_size )
+
+    bool push( const T& t, T* buffer, size_t max_size )
     {
         const size_t write_index = write_index_.load( memory_order_relaxed ); // only written from push thread
         const size_t next        = next_index( write_index, max_size );
@@ -101,6 +102,21 @@ protected:
             return false;                    /* ringbuffer is full */
 
         new ( buffer + write_index ) T( t ); // copy-construct
+
+        write_index_.store( next, memory_order_release );
+
+        return true;
+    }
+
+    bool push( T&& t, T* buffer, size_t max_size )
+    {
+        const size_t write_index = write_index_.load( memory_order_relaxed ); // only written from push thread
+        const size_t next        = next_index( write_index, max_size );
+
+        if ( next == read_index_.load( memory_order_acquire ) )
+            return false;                                         /* ringbuffer is full */
+
+        new ( buffer + write_index ) T( std::forward< T >( t ) ); // move-construct
 
         write_index_.store( next, memory_order_release );
 
@@ -159,7 +175,7 @@ protected:
             return false;
 
         T& object_to_consume = buffer[ read_index ];
-        functor( object_to_consume );
+        functor( std::move( object_to_consume ) );
         object_to_consume.~T();
 
         size_t next = next_index( read_index, max_size );
@@ -221,12 +237,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = output_count - count0;
 
-            copy_and_delete( internal_buffer + read_index, internal_buffer + max_size, output_buffer );
-            copy_and_delete( internal_buffer, internal_buffer + count1, output_buffer + count0 );
+            move_and_delete( internal_buffer + read_index, internal_buffer + max_size, output_buffer );
+            move_and_delete( internal_buffer, internal_buffer + count1, output_buffer + count0 );
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete( internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer );
+            move_and_delete( internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer );
             if ( new_read_index == max_size )
                 new_read_index = 0;
         }
@@ -252,12 +268,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = avail - count0;
 
-            it = copy_and_delete( internal_buffer + read_index, internal_buffer + max_size, it );
-            copy_and_delete( internal_buffer, internal_buffer + count1, it );
+            it = move_and_delete( internal_buffer + read_index, internal_buffer + max_size, it );
+            move_and_delete( internal_buffer, internal_buffer + count1, it );
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete( internal_buffer + read_index, internal_buffer + read_index + avail, it );
+            move_and_delete( internal_buffer + read_index, internal_buffer + read_index + avail, it );
             if ( new_read_index == max_size )
                 new_read_index = 0;
         }
@@ -322,13 +338,13 @@ private:
     }
 
     template < class OutputIterator >
-    OutputIterator copy_and_delete( T* first, T* last, OutputIterator out )
+    OutputIterator move_and_delete( T* first, T* last, OutputIterator out )
     {
         if ( std::is_trivially_destructible< T >::value ) {
             return std::copy( first, last, out ); // will use memcpy if possible
         } else {
             for ( ; first != last; ++first, ++out ) {
-                *out = *first;
+                *out = std::move( *first );
                 first->~T();
             }
             return out;
@@ -339,7 +355,7 @@ private:
     void run_functor_and_delete( T* first, T* last, Functor&& functor )
     {
         for ( ; first != last; ++first ) {
-            functor( *first );
+            functor( std::move( *first ) );
             first->~T();
         }
     }
@@ -379,9 +395,14 @@ protected:
     }
 
 public:
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return ringbuffer_base< T >::push( t, data(), max_size );
+    }
+
+    bool push( T&& t )
+    {
+        return ringbuffer_base< T >::push( std::forward< T >( t ), data(), max_size );
     }
 
     template < typename Functor >
@@ -484,9 +505,14 @@ public:
         allocator_traits::deallocate( allocator, array_, max_elements_ );
     }
 
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return ringbuffer_base< T >::push( t, &*array_, max_elements_ );
+    }
+
+    bool push( T&& t )
+    {
+        return ringbuffer_base< T >::push( std::forward< T >( t ), &*array_, max_elements_ );
     }
 
     template < typename Functor >
@@ -676,9 +702,15 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return base_type::push( t );
+    }
+
+    /// \copydoc boost::lockfree::spsc_queue::push(const T& t)
+    bool push( T&& t )
+    {
+        return base_type::push( std::forward< T >( t ) );
     }
 
     /** Pops one object from ringbuffer.
@@ -705,8 +737,8 @@ public:
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
     bool pop( U& ret )
     {
-        return consume_one( [ & ]( const T& t ) {
-            ret = std::move( t );
+        return consume_one( [ & ]( T&& t ) {
+            ret = std::forward< T >( t );
         } );
     }
 

@@ -295,9 +295,15 @@ public:
      * \note Thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node will
      * be allocated from the OS. This may not be lock-free.
      * */
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return do_push< false >( t );
+    }
+
+    /// \copydoc boost::lockfree::queue::push(const T & t)
+    bool push( T&& t )
+    {
+        return do_push< false >( std::forward< T >( t ) );
     }
 
     /** Pushes object t to the queue.
@@ -308,18 +314,36 @@ public:
      * \note Thread-safe and non-blocking. If internal memory pool is exhausted, operation will fail
      * \throws if memory allocator throws
      * */
-    bool bounded_push( T const& t )
+    bool bounded_push( const T& t )
     {
         return do_push< true >( t );
+    }
+
+    /// \copydoc boost::lockfree::queue::bounded_push(const T & t)
+    bool bounded_push( T&& t )
+    {
+        return do_push< true >( std::forward< T >( t ) );
     }
 
 
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
     template < bool Bounded >
+    bool do_push( T&& t )
+    {
+        node* n = pool.template construct< true, Bounded >( std::forward< T >( t ), pool.null_handle() );
+        return do_push_node( n );
+    }
+
+    template < bool Bounded >
     bool do_push( T const& t )
     {
-        node*       n           = pool.template construct< true, Bounded >( t, pool.null_handle() );
+        node* n = pool.template construct< true, Bounded >( t, pool.null_handle() );
+        return do_push_node( n );
+    }
+
+    bool do_push_node( node* n )
+    {
         handle_type node_handle = pool.get_handle( n );
 
         if ( n == NULL )
@@ -347,6 +371,7 @@ private:
             }
         }
     }
+
 #endif
 
 public:
@@ -358,9 +383,9 @@ public:
      * \note Not Thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node
      * will be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
      * */
-    bool unsynchronized_push( T const& t )
+    bool unsynchronized_push( T&& t )
     {
-        node* n = pool.template construct< false, false >( t, pool.null_handle() );
+        node* n = pool.template construct< false, false >( std::forward< T >( t ), pool.null_handle() );
 
         if ( n == NULL )
             return false;
@@ -509,7 +534,7 @@ public:
         T    element;
         bool success = pop( element );
         if ( success )
-            f( element );
+            f( std::move( element ) );
 
         return success;
     }
