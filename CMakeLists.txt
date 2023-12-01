@@ -9,6 +9,9 @@ project(boost_lockfree VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
 option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" ${BUILD_TESTING})
 
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 14)
+endif()
 
 add_library(boost_lockfree INTERFACE)
 add_library(Boost::lockfree ALIAS boost_lockfree)
@@ -33,24 +36,21 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
     target_sources(boost_lockfree PUBLIC FILE_SET HEADERS FILES ${Headers} )
 endif()
 
+target_compile_features(boost_lockfree INTERFACE cxx_std_14)
+set_target_properties( boost_lockfree PROPERTIES CMAKE_CXX_STANDARD_REQUIRED 14)
+
 target_include_directories(boost_lockfree INTERFACE include)
 
 target_link_libraries(boost_lockfree
   INTERFACE
     Boost::align
-    Boost::array
     Boost::assert
     Boost::atomic
     Boost::config
     Boost::core
-    Boost::integer
-    Boost::iterator
-    Boost::mpl
     Boost::parameter
     Boost::predef
     Boost::static_assert
-    Boost::tuple
-    Boost::type_traits
     Boost::utility
 )
 

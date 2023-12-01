@@ -5,10 +5,10 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <cstdlib> //std::system
+#include <thread>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/lockfree/stack.hpp>
-#include <boost/thread/thread.hpp>
 
 using namespace boost::interprocess;
 typedef allocator< int, managed_shared_memory::segment_manager > ShmemAllocator;
@@ -42,7 +42,7 @@ int main( int argc, char* argv[] )
             return 1;
 
         while ( !queue->empty() )
-            boost::thread::yield();
+            std::this_thread::yield();
         return 0;
     } else {
         managed_shared_memory segment( open_only, "MySharedMemory" );

@@ -15,10 +15,6 @@
 
 #    include <boost/config.hpp>
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-#        include <boost/parameter/aux_/void.hpp>
-#    endif
-
 namespace boost { namespace lockfree {
 
 // policies
@@ -34,25 +30,13 @@ struct allocator;
 
 // data structures
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
-#    endif
 class queue;
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
-#    endif
 class stack;
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
-#    endif
 class spsc_queue;
 
 }}     // namespace boost::lockfree

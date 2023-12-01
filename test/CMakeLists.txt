@@ -37,8 +37,8 @@ foreach(Test ${Tests})
         Boost::lockfree
         Boost::unit_test_framework
         Boost::thread
-        Boost::foreach
     )
+    set_target_properties( boost_lockfree_${Test} PROPERTIES CMAKE_CXX_STANDARD_REQUIRED 14)
 
     target_compile_definitions(boost_lockfree_${Test} PRIVATE BOOST_TEST_NO_OLD_TOOLS )
 

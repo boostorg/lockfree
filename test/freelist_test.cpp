@@ -10,9 +10,7 @@
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/queue.hpp>
 
-#include <boost/foreach.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp>
 
 #define BOOST_TEST_MAIN
 #ifdef BOOST_LOCKFREE_INCLUDE_TESTS
@@ -66,14 +64,14 @@ void run_test( void )
         nodes.insert( allocated );
     }
 
-    BOOST_FOREACH ( dummy* d, nodes )
+    for ( dummy* d : nodes )
         fl.template destruct< threadsafe >( d );
 
     nodes.clear();
     for ( int i = 0; i != 4; ++i )
         nodes.insert( fl.template construct< threadsafe, bounded >() );
 
-    BOOST_FOREACH ( dummy* d, nodes )
+    for ( dummy* d : nodes )
         fl.template destruct< threadsafe >( d );
 
     for ( int i = 0; i != 4; ++i )
@@ -152,10 +150,14 @@ struct freelist_tester
         boost::thread_group dealloc_threads;
 
         for ( int i = 0; i != thread_count; ++i )
-            dealloc_threads.create_thread( boost::bind( &freelist_tester::deallocate, this ) );
+            dealloc_threads.create_thread( [ this ] {
+                deallocate();
+            } );
 
         for ( int i = 0; i != thread_count; ++i )
-            alloc_threads.create_thread( boost::bind( &freelist_tester::allocate, this ) );
+            alloc_threads.create_thread( [ this ] {
+                allocate();
+            } );
         alloc_threads.join_all();
         test_running.store( false );
         running = false;
@@ -193,7 +195,7 @@ struct freelist_tester
                 break;
 
 #ifdef __VXWORKS__
-            boost::thread::yield();
+            std::this_thread::yield();
 #endif
         }
 
@@ -210,7 +212,7 @@ struct freelist_tester
 template < typename Tester >
 void run_tester()
 {
-    boost::scoped_ptr< Tester > tester( new Tester );
+    std::unique_ptr< Tester > tester( new Tester );
     tester->run();
 }
 

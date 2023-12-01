@@ -12,6 +12,7 @@
 #include <cstddef> /* for std::size_t */
 #include <limits>
 
+#include <boost/config.hpp>
 #include <boost/predef.h>
 
 namespace boost { namespace lockfree { namespace detail {
@@ -32,17 +33,10 @@ public:
     typedef std::size_t tag_t;
 
     /** uninitialized constructor */
-    tagged_ptr( void ) BOOST_NOEXCEPT //: ptr(0), tag(0)
+    tagged_ptr( void ) noexcept //: ptr(0), tag(0)
     {}
 
-#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
-    tagged_ptr( tagged_ptr const& p ) :
-        ptr( p.ptr ),
-        tag( p.tag )
-    {}
-#else
     tagged_ptr( tagged_ptr const& p ) = default;
-#endif
 
     explicit tagged_ptr( T* p, tag_t t = 0 ) :
         ptr( p ),
@@ -51,15 +45,7 @@ public:
 
     /** unsafe set operation */
     /* @{ */
-#ifdef BOOST_NO_CXX11_DEFAULTED_FUNCTIONS
-    tagged_ptr& operator=( tagged_ptr const& p )
-    {
-        set( p.ptr, p.tag );
-        return *this;
-    }
-#else
     tagged_ptr& operator=( tagged_ptr const& p ) = default;
-#endif
 
     void set( T* p, tag_t t )
     {

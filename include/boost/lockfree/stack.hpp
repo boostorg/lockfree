@@ -8,21 +8,22 @@
 #define BOOST_LOCKFREE_STACK_HPP_INCLUDED
 
 #include <boost/assert.hpp>
-#include <boost/checked_delete.hpp>
 #include <boost/core/allocator_access.hpp>
 #include <boost/core/no_exceptions_support.hpp>
-#include <boost/integer_traits.hpp>
+#include <boost/core/span.hpp>
+#include <boost/parameter/optional.hpp>
+#include <boost/parameter/parameters.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/type_traits/is_copy_constructible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
-
 #include <boost/lockfree/lockfree_forward.hpp>
+
+#include <tuple>
+#include <type_traits>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #    pragma once
@@ -59,22 +60,14 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *  \b Requirements:
  *  - T must have a copy constructor
  * */
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0, class A1, class A2 >
-#else
 template < typename T, typename... Options >
-#endif
 class stack
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    BOOST_STATIC_ASSERT( boost::is_copy_constructible< T >::value );
+    BOOST_STATIC_ASSERT( std::is_copy_constructible< T >::value );
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    typedef typename detail::stack_signature::bind< A0, A1, A2 >::type bound_args;
-#    else
     typedef typename detail::stack_signature::bind< Options... >::type bound_args;
-#    endif
 
     static const bool   has_capacity       = detail::extract_capacity< bound_args >::has_capacity;
     static const size_t capacity           = detail::extract_capacity< bound_args >::capacity;
@@ -99,20 +92,16 @@ private:
     typedef typename pool_t::tagged_node_handle tagged_node_handle;
 
     // check compile-time capacity
-    BOOST_STATIC_ASSERT( ( mpl::if_c< has_capacity,
-                                      mpl::bool_< capacity - 1 < boost::integer_traits< boost::uint16_t >::const_max >,
-                                      mpl::true_ >::type::value ) );
+    static constexpr bool capacity_is_valid = has_capacity ? capacity - 1 < std::numeric_limits< std::uint16_t >::max()
+                                                           : true;
+    BOOST_STATIC_ASSERT( capacity_is_valid );
 
     struct implementation_defined
     {
         typedef node_allocator allocator;
         typedef std::size_t    size_type;
     };
-
 #endif
-
-    BOOST_DELETED_FUNCTION( stack( stack const& ) )
-    BOOST_DELETED_FUNCTION( stack& operator=( stack const& ) )
 
 public:
     typedef T                                          value_type;
@@ -137,7 +126,7 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
-    stack( void ) :
+    explicit stack( void ) :
         pool( node_allocator(), capacity )
     {
         // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
@@ -150,11 +139,10 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< has_capacity > >
     explicit stack( typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         pool( alloc, capacity )
     {
-        BOOST_STATIC_ASSERT( has_capacity );
         initialize();
     }
 
@@ -162,12 +150,10 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< has_capacity > >
     explicit stack( allocator const& alloc ) :
         pool( alloc, capacity )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( has_capacity );
         initialize();
     }
 
@@ -177,14 +163,18 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     explicit stack( size_type n ) :
         pool( node_allocator(), n )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( !has_capacity );
         initialize();
     }
+
+    stack( const stack& )            = delete;
+    stack& operator=( const stack& ) = delete;
+    stack( stack&& )                 = delete;
+    stack& operator=( stack&& )      = delete;
+
 
     /** Construct a variable-sized stack with a custom allocator
      *
@@ -192,11 +182,10 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< !has_capacity > >
     stack( size_type n, typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         pool( alloc, n )
     {
-        BOOST_STATIC_ASSERT( !has_capacity );
         initialize();
     }
 
@@ -206,10 +195,10 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     stack( size_type n, node_allocator const& alloc ) :
         pool( alloc, n )
     {
-        BOOST_STATIC_ASSERT( !has_capacity );
         initialize();
     }
 
@@ -219,11 +208,9 @@ public:
      *  \note thread-safe, may block if memory allocator blocks
      *
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     void reserve( size_type n )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( !has_capacity );
         pool.template reserve< true >( n );
     }
 
@@ -233,11 +220,9 @@ public:
      *  \note not thread-safe, may block if memory allocator blocks
      *
      * */
+    template < typename Enabler = std::enable_if< !has_capacity > >
     void reserve_unsafe( size_type n )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( !has_capacity );
         pool.template reserve< false >( n );
     }
 
@@ -248,8 +233,7 @@ public:
      * */
     ~stack( void )
     {
-        detail::consume_noop consume_functor;
-        (void)consume_all( consume_functor );
+        consume_all( []( const T& ) {} );
     }
 
 private:
@@ -282,13 +266,13 @@ private:
     }
 
     template < bool Threadsafe, bool Bounded, typename ConstIterator >
-    tuple< node*, node* > prepare_node_list( ConstIterator begin, ConstIterator end, ConstIterator& ret )
+    std::tuple< node*, node* > prepare_node_list( ConstIterator begin, ConstIterator end, ConstIterator& ret )
     {
         ConstIterator it       = begin;
         node*         end_node = pool.template construct< Threadsafe, Bounded >( *it++ );
         if ( end_node == NULL ) {
             ret = begin;
-            return make_tuple< node*, node* >( NULL, NULL );
+            return std::make_tuple< node*, node* >( NULL, NULL );
         }
 
         node* new_top_node = end_node;
@@ -317,7 +301,32 @@ private:
         BOOST_CATCH_END
 
         ret = it;
-        return make_tuple( new_top_node, end_node );
+        return std::make_tuple( new_top_node, end_node );
+    }
+
+    template < bool Bounded >
+    bool do_push( T const& v )
+    {
+        node* newnode = pool.template construct< true, Bounded >( v );
+        if ( newnode == 0 )
+            return false;
+
+        link_nodes_atomic( newnode, newnode );
+        return true;
+    }
+
+    template < bool Bounded, typename ConstIterator >
+    ConstIterator do_push( ConstIterator begin, ConstIterator end )
+    {
+        node*         new_top_node;
+        node*         end_node;
+        ConstIterator ret;
+
+        std::tie( new_top_node, end_node ) = prepare_node_list< true, Bounded >( begin, end, ret );
+        if ( new_top_node )
+            link_nodes_atomic( new_top_node, end_node );
+
+        return ret;
     }
 #endif
 
@@ -347,48 +356,37 @@ public:
         return do_push< true >( v );
     }
 
-#ifndef BOOST_DOXYGEN_INVOKED
-private:
-    template < bool Bounded >
-    bool do_push( T const& v )
-    {
-        node* newnode = pool.template construct< true, Bounded >( v );
-        if ( newnode == 0 )
-            return false;
-
-        link_nodes_atomic( newnode, newnode );
-        return true;
-    }
-
-    template < bool Bounded, typename ConstIterator >
-    ConstIterator do_push( ConstIterator begin, ConstIterator end )
-    {
-        node*         new_top_node;
-        node*         end_node;
-        ConstIterator ret;
-
-        tie( new_top_node, end_node ) = prepare_node_list< true, Bounded >( begin, end, ret );
-        if ( new_top_node )
-            link_nodes_atomic( new_top_node, end_node );
-
-        return ret;
-    }
-
-public:
-#endif
-
     /** Pushes as many objects from the range [begin, end) as freelist node can be allocated.
      *
      * \return iterator to the first element, which has not been pushed
      *
      * \note Operation is applied atomically
      * \note Thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node will
-     * be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
+     * be allocated from the OS. This may not be lock-free.
+     *
+     * \throws if memory allocator throws
      */
     template < typename ConstIterator >
     ConstIterator push( ConstIterator begin, ConstIterator end )
     {
         return do_push< false, ConstIterator >( begin, end );
+    }
+
+    /** Pushes as many objects from the span as freelist node can be allocated.
+     *
+     * \return Number of elements pushed
+     *
+     * \note Operation is applied atomically
+     * \note Thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node will
+     * be allocated from the OS. This may not be lock-free.
+     *
+     * \throws if memory allocator throws
+     */
+    template < std::size_t Extent >
+    size_type push( boost::span< const T, Extent > t )
+    {
+        const T* end_pushed = push( t.begin(), t.end() );
+        return std::distance( t.begin(), end_pushed );
     }
 
     /** Pushes as many objects from the range [begin, end) as freelist node can be allocated.
@@ -405,6 +403,21 @@ public:
         return do_push< true, ConstIterator >( begin, end );
     }
 
+    /** Pushes as many objects from the span as freelist node can be allocated.
+     *
+     * \return Number of elements pushed
+     *
+     * \note Operation is applied atomically
+     * \note Thread-safe and non-blocking. If internal memory pool is exhausted, the push operation will fail
+     * \throws if memory allocator throws
+     */
+    template < std::size_t Extent >
+    size_type bounded_push( boost::span< const T, Extent > t )
+    {
+        const T* end_pushed = bounded_push( t.begin(), t.end() );
+        return std::distance( t.begin(), end_pushed );
+    }
+
 
     /** Pushes object t to the stack.
      *
@@ -412,7 +425,8 @@ public:
      * \returns true, if the push operation is successful.
      *
      * \note Not thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node
-     * will be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
+     * will be allocated from the OS. This may not be lock-free.
+     * \throws if memory allocator throws
      * */
     bool unsynchronized_push( T const& v )
     {
@@ -429,7 +443,8 @@ public:
      * \return iterator to the first element, which has not been pushed
      *
      * \note Not thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node
-     * will be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
+     * will be allocated from the OS. This may not be lock-free.
+     * \throws if memory allocator throws
      */
     template < typename ConstIterator >
     ConstIterator unsynchronized_push( ConstIterator begin, ConstIterator end )
@@ -438,13 +453,26 @@ public:
         node*         end_node;
         ConstIterator ret;
 
-        tie( new_top_node, end_node ) = prepare_node_list< false, false >( begin, end, ret );
+        std::tie( new_top_node, end_node ) = prepare_node_list< false, false >( begin, end, ret );
         if ( new_top_node )
             link_nodes_unsafe( new_top_node, end_node );
 
         return ret;
     }
 
+    /** Pushes as many objects from the span as freelist node can be allocated.
+     *
+     * \return iterator to the first element, which has not been pushed
+     *
+     * \note Not thread-safe. If internal memory pool is exhausted and the memory pool is not fixed-sized, a new node
+     * will be allocated from the OS. This may not be lock-free. \throws if memory allocator throws
+     */
+    template < std::size_t Extent >
+    size_type unsynchronized_push( boost::span< const T, Extent > t )
+    {
+        const T* end_pushed = unsynchronized_push( t.begin(), t.end() );
+        return std::distance( t.begin(), end_pushed );
+    }
 
     /** Pops object from stack.
      *
@@ -468,13 +496,12 @@ public:
      * \note Thread-safe and non-blocking
      *
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
     bool pop( U& ret )
     {
-        BOOST_STATIC_ASSERT( ( boost::is_convertible< T, U >::value ) );
-        detail::consume_via_copy< U > consumer( ret );
-
-        return consume_one( consumer );
+        return consume_one( [ & ]( const T& t ) {
+            ret = U( t );
+        } );
     }
 
 
@@ -500,10 +527,9 @@ public:
      * \note Not thread-safe, but non-blocking
      *
      * */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
     bool unsynchronized_pop( U& ret )
     {
-        BOOST_STATIC_ASSERT( ( boost::is_convertible< T, U >::value ) );
         tagged_node_handle old_tos         = tos.load( detail::memory_order_relaxed );
         node*              old_tos_pointer = pool.get_pointer( old_tos );
 
@@ -528,28 +554,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    bool consume_one( Functor& f )
-    {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_consume );
-
-        for ( ;; ) {
-            node* old_tos_pointer = pool.get_pointer( old_tos );
-            if ( !old_tos_pointer )
-                return false;
-
-            tagged_node_handle new_tos( old_tos_pointer->next, old_tos.get_next_tag() );
-
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) ) {
-                f( old_tos_pointer->v );
-                pool.template destruct< true >( old_tos );
-                return true;
-            }
-        }
-    }
-
-    /// \copydoc boost::lockfree::stack::consume_one(Functor & rhs)
-    template < typename Functor >
-    bool consume_one( Functor const& f )
+    bool consume_one( Functor&& f )
     {
         tagged_node_handle old_tos = tos.load( detail::memory_order_consume );
 
@@ -577,18 +582,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    size_t consume_all( Functor& f )
-    {
-        size_t element_count = 0;
-        while ( consume_one( f ) )
-            element_count += 1;
-
-        return element_count;
-    }
-
-    /// \copydoc boost::lockfree::stack::consume_all(Functor & rhs)
-    template < typename Functor >
-    size_t consume_all( Functor const& f )
+    size_t consume_all( Functor&& f )
     {
         size_t element_count = 0;
         while ( consume_one( f ) )
@@ -606,47 +600,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    size_t consume_all_atomic( Functor& f )
-    {
-        size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
-
-        for ( ;; ) {
-            node* old_tos_pointer = pool.get_pointer( old_tos );
-            if ( !old_tos_pointer )
-                return 0;
-
-            tagged_node_handle new_tos( pool.null_handle(), old_tos.get_next_tag() );
-
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) )
-                break;
-        }
-
-        tagged_node_handle nodes_to_consume = old_tos;
-
-        for ( ;; ) {
-            node* node_pointer = pool.get_pointer( nodes_to_consume );
-            f( node_pointer->v );
-            element_count += 1;
-
-            node* next_node = pool.get_pointer( node_pointer->next );
-
-            if ( !next_node ) {
-                pool.template destruct< true >( nodes_to_consume );
-                break;
-            }
-
-            tagged_node_handle next( pool.get_handle( next_node ), nodes_to_consume.get_next_tag() );
-            pool.template destruct< true >( nodes_to_consume );
-            nodes_to_consume = next;
-        }
-
-        return element_count;
-    }
-
-    /// \copydoc boost::lockfree::stack::consume_all_atomic(Functor & rhs)
-    template < typename Functor >
-    size_t consume_all_atomic( Functor const& f )
+    size_t consume_all_atomic( Functor&& f )
     {
         size_t             element_count = 0;
         tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
@@ -693,65 +647,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    size_t consume_all_atomic_reversed( Functor& f )
-    {
-        size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
-
-        for ( ;; ) {
-            node* old_tos_pointer = pool.get_pointer( old_tos );
-            if ( !old_tos_pointer )
-                return 0;
-
-            tagged_node_handle new_tos( pool.null_handle(), old_tos.get_next_tag() );
-
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) )
-                break;
-        }
-
-        tagged_node_handle nodes_to_consume = old_tos;
-
-        node*              last_node_pointer = NULL;
-        tagged_node_handle nodes_in_reversed_order;
-        for ( ;; ) {
-            node* node_pointer = pool.get_pointer( nodes_to_consume );
-            node* next_node    = pool.get_pointer( node_pointer->next );
-
-            node_pointer->next = pool.get_handle( last_node_pointer );
-            last_node_pointer  = node_pointer;
-
-            if ( !next_node ) {
-                nodes_in_reversed_order = nodes_to_consume;
-                break;
-            }
-
-            tagged_node_handle next( pool.get_handle( next_node ), nodes_to_consume.get_next_tag() );
-            nodes_to_consume = next;
-        }
-
-        for ( ;; ) {
-            node* node_pointer = pool.get_pointer( nodes_in_reversed_order );
-            f( node_pointer->v );
-            element_count += 1;
-
-            node* next_node = pool.get_pointer( node_pointer->next );
-
-            if ( !next_node ) {
-                pool.template destruct< true >( nodes_in_reversed_order );
-                break;
-            }
-
-            tagged_node_handle next( pool.get_handle( next_node ), nodes_in_reversed_order.get_next_tag() );
-            pool.template destruct< true >( nodes_in_reversed_order );
-            nodes_in_reversed_order = next;
-        }
-
-        return element_count;
-    }
-
-    /// \copydoc boost::lockfree::stack::consume_all_atomic_reversed(Functor & rhs)
-    template < typename Functor >
-    size_t consume_all_atomic_reversed( Functor const& f )
+    size_t consume_all_atomic_reversed( Functor&& f )
     {
         size_t             element_count = 0;
         tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );

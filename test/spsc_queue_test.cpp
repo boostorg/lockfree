@@ -13,11 +13,7 @@
 #    include <boost/test/unit_test.hpp>
 #endif
 
-#include <iostream>
-#include <memory>
-
 #include "test_common.hpp"
-#include "test_helpers.hpp"
 
 using namespace boost;
 using namespace boost::lockfree;
@@ -85,10 +81,6 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_one_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    bool success1 = f.consume_one( test_equal( 1 ) );
-    bool success2 = f.consume_one( test_equal( 2 ) );
-#else
     bool success1 = f.consume_one( []( int i ) {
         BOOST_TEST_REQUIRE( i == 1 );
     } );
@@ -96,7 +88,6 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_one_test )
     bool success2 = f.consume_one( []( int i ) {
         BOOST_TEST_REQUIRE( i == 2 );
     } );
-#endif
 
     BOOST_TEST_REQUIRE( success1 );
     BOOST_TEST_REQUIRE( success2 );
@@ -114,11 +105,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_all_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all( dummy_functor() );
-#else
     size_t consumed = f.consume_all( []( int i ) {} );
-#endif
 
     BOOST_TEST_REQUIRE( consumed == 2u );
 
@@ -130,6 +117,7 @@ enum
     pointer_and_size,
     reference_to_array,
     iterator_pair,
+    span_,
     output_iterator_
 };
 
@@ -196,19 +184,18 @@ void spsc_queue_buffer_push_return_value( void )
 
     switch ( EnqueueMode ) {
     case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == xqueue_size ); break;
-
     case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == xqueue_size ); break;
-
     case iterator_pair:      BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + xqueue_size ); break;
-
+    case span_:              BOOST_TEST_REQUIRE( rb.push( boost::span< const int >( data, xqueue_size ) ) == xqueue_size ); break;
     default:                 assert( false );
     }
 
     switch ( EnqueueMode ) {
     case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == buffer_size - xqueue_size ); break;
-
     case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == buffer_size - xqueue_size ); break;
-
+    case span_:
+        BOOST_TEST_REQUIRE( rb.push( boost::span< const int >( data, xqueue_size ) ) == buffer_size - xqueue_size );
+        break;
     case iterator_pair:
         BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + buffer_size - xqueue_size );
         break;
@@ -222,6 +209,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_push_return_value_test )
     spsc_queue_buffer_push_return_value< pointer_and_size >();
     spsc_queue_buffer_push_return_value< reference_to_array >();
     spsc_queue_buffer_push_return_value< iterator_pair >();
+    spsc_queue_buffer_push_return_value< span_ >();
 }
 
 template < int EnqueueMode, int ElementCount, int BufferSize, int NumberOfIterations >
@@ -240,12 +228,13 @@ void spsc_queue_buffer_push( void )
         BOOST_TEST_REQUIRE( rb.empty() );
         switch ( EnqueueMode ) {
         case pointer_and_size:   BOOST_TEST_REQUIRE( rb.push( data, xqueue_size ) == xqueue_size ); break;
-
         case reference_to_array: BOOST_TEST_REQUIRE( rb.push( data ) == xqueue_size ); break;
-
         case iterator_pair:      BOOST_TEST_REQUIRE( rb.push( data, data + xqueue_size ) == data + xqueue_size ); break;
+        case span_:
+            BOOST_TEST_REQUIRE( rb.push( boost::span< const int >( data, xqueue_size ) ) == xqueue_size );
+            break;
 
-        default:                 assert( false );
+        default: assert( false );
         }
 
         int out[ xqueue_size ];
@@ -260,6 +249,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_buffer_push_test )
     spsc_queue_buffer_push< pointer_and_size, 7, 16, 64 >();
     spsc_queue_buffer_push< reference_to_array, 7, 16, 64 >();
     spsc_queue_buffer_push< iterator_pair, 7, 16, 64 >();
+    spsc_queue_buffer_push< span_, 7, 16, 64 >();
 }
 
 template < int EnqueueMode, int ElementCount, int BufferSize, int NumberOfIterations >
@@ -283,11 +273,8 @@ void spsc_queue_buffer_pop( void )
 
         switch ( EnqueueMode ) {
         case pointer_and_size:   BOOST_TEST_REQUIRE( rb.pop( out, xqueue_size ) == xqueue_size ); break;
-
         case reference_to_array: BOOST_TEST_REQUIRE( rb.pop( out ) == xqueue_size ); break;
-
         case output_iterator_:   BOOST_TEST_REQUIRE( rb.pop( std::back_inserter( vout ) ) == xqueue_size ); break;
-
         default:                 assert( false );
         }
 
