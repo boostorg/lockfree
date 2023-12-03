@@ -19,6 +19,7 @@ add_library(Boost::lockfree ALIAS boost_lockfree)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
     set(Headers
         include/boost/lockfree/spsc_queue.hpp
+        include/boost/lockfree/spsc_value.hpp
         include/boost/lockfree/policies.hpp
         include/boost/lockfree/queue.hpp
         include/boost/lockfree/lockfree_forward.hpp

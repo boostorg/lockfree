@@ -50,6 +50,10 @@ template < typename T, typename... Options >
     requires( std::is_default_constructible_v< T >, std::is_move_assignable_v< T > || std::is_copy_assignable_v< T > )
 #    endif
 class spsc_queue;
+
+template < typename T, typename... Options >
+struct spsc_value;
+
 }}     // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED
