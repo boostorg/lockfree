@@ -7,13 +7,16 @@ cmake_minimum_required(VERSION 3.5...3.16)
 
 project(boost_lockfree VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
-option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" ${BUILD_TESTING})
+option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" OFF)
+option(BOOST_LOCKFREE_USE_FILE_SET "Use FILE_SET for boost::lockfree" OFF)
 
 
 add_library(boost_lockfree INTERFACE)
 add_library(Boost::lockfree ALIAS boost_lockfree)
 
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
+target_include_directories(boost_lockfree INTERFACE include)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23 AND BOOST_LOCKFREE_USE_FILE_SET)
     set(Headers
         include/boost/lockfree/spsc_queue.hpp
         include/boost/lockfree/policies.hpp
@@ -32,8 +35,6 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
 
     target_sources(boost_lockfree PUBLIC FILE_SET HEADERS FILES ${Headers} )
 endif()
-
-target_include_directories(boost_lockfree INTERFACE include)
 
 target_link_libraries(boost_lockfree
   INTERFACE
@@ -65,6 +66,6 @@ endif()
 
 
 
-if( BOOST_LOCKFREE_BUILD_TESTS )
+if( BOOST_LOCKFREE_BUILD_TESTS OR BUILD_TESTING )
     add_subdirectory(test)
 endif()
