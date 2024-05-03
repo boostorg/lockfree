@@ -32,118 +32,118 @@ jobs:
       matrix:
         include:
           - toolset: gcc-5
-            cxxstd: "11,14,1z"
+            cxxstd: "14,1z"
             os: ubuntu-22.04
             container: ubuntu:16.04
             install: g++-5
             supported: true
           - toolset: gcc-6
-            cxxstd: "11,14,1z"
+            cxxstd: "14,1z"
             os: ubuntu-22.04
             container: ubuntu:16.04
             install: g++-6
             supported: true
           - toolset: gcc-7
-            cxxstd: "11,14,17"
+            cxxstd: "14,17"
             os: ubuntu-22.04
             container: ubuntu:18.04
             install: g++-7
             supported: true
           - toolset: gcc-8
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: ubuntu-22.04
             container: ubuntu:18.04
             install: g++-8
             supported: true
           - toolset: gcc-9
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: ubuntu-22.04
             container: ubuntu:18.04
             install: g++-9
             supported: true
           - toolset: gcc-10
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: ubuntu-22.04
             install: g++-10
             supported: true
           - toolset: gcc-11
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             install: g++-11
             supported: true
           - toolset: gcc-12
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             install: g++-12
             supported: true
           - toolset: gcc-13
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             install: g++-13
             supported: true
           - toolset: clang
             install: clang-9
             compiler: clang++-9
-            cxxstd: "11,14,17"
+            cxxstd: "14,17"
             os: ubuntu-22.04
             container: ubuntu:18.04
           - toolset: clang
             install: clang-10
             compiler: clang++-10
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: ubuntu-20.04
             supported: true
           - toolset: clang
             install: clang-11
             compiler: clang++-11
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: ubuntu-20.04
             supported: true
           - toolset: clang
             install: clang-12
             compiler: clang++-12
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             supported: true
           - toolset: clang
             install: clang-13
             compiler: clang++-13
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             supported: true
           - toolset: clang
             install: clang-14
             compiler: clang++-14
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             supported: true
           - toolset: clang
             install: clang-15
             compiler: clang++-15
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: ubuntu-22.04
             supported: true
           # - toolset: clang
           #   install: clang-16
           #   compiler: clang++-16
-          #   cxxstd: "11,14,17,20"
+          #   cxxstd: "14,17,20"
           #   os: ubuntu-22.04
           #   supported: true
 
           # macos
           - description: macos-11
             toolset: clang
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             os: macos-11
             supported: true
           - description: macos-12
             toolset: clang
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: macos-11
             supported: true
           - description: macos-13
             toolset: clang
-            cxxstd: "11,14,17,20"
+            cxxstd: "14,17,20"
             os: macos-11
             supported: true
 
@@ -282,7 +282,7 @@ jobs:
             addrmd: 64
             os: windows-2019
           - toolset: gcc
-            cxxstd: "11,14,17,2a"
+            cxxstd: "14,17,2a"
             addrmd: 64
             cxxflags: "cxxflags=-Wa,-mbig-obj"
             supported: true
