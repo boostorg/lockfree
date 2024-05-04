@@ -12,24 +12,22 @@
 
 #include <algorithm>
 #include <memory>
+#include <type_traits>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
 #include <boost/config.hpp> // for BOOST_LIKELY
 #include <boost/core/allocator_access.hpp>
-#include <boost/next_prior.hpp>
+#include <boost/core/span.hpp>
+#include <boost/parameter/optional.hpp>
+#include <boost/parameter/parameters.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/utility.hpp>
-#include <boost/utility/enable_if.hpp>
-
-#include <boost/type_traits/has_trivial_destructor.hpp>
-#include <boost/type_traits/is_convertible.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
-
+#include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
@@ -39,22 +37,16 @@
 namespace boost { namespace lockfree {
 namespace detail {
 
-typedef parameter::parameters< boost::parameter::optional< tag::capacity >, boost::parameter::optional< tag::allocator > >
-    ringbuffer_signature;
-
 template < typename T >
 class ringbuffer_base
 {
 #ifndef BOOST_DOXYGEN_INVOKED
 protected:
-    typedef std::size_t size_t;
-    static const int    padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( size_t );
-    atomic< size_t >    write_index_;
-    char                padding1[ padding_size ]; /* force read_index and write_index to different cache lines */
-    atomic< size_t >    read_index_;
-
-    BOOST_DELETED_FUNCTION( ringbuffer_base( ringbuffer_base const& ) )
-    BOOST_DELETED_FUNCTION( ringbuffer_base& operator=( ringbuffer_base const& ) )
+    typedef std::size_t  size_t;
+    static constexpr int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( size_t );
+    atomic< size_t >     write_index_;
+    char                 padding1[ padding_size ]; /* force read_index and write_index to different cache lines */
+    atomic< size_t >     read_index_;
 
 protected:
     ringbuffer_base( void ) :
@@ -101,7 +93,8 @@ protected:
         return write_available( write_index, read_index, max_size );
     }
 
-    bool push( T const& t, T* buffer, size_t max_size )
+
+    bool push( const T& t, T* buffer, size_t max_size )
     {
         const size_t write_index = write_index_.load( memory_order_relaxed ); // only written from push thread
         const size_t next        = next_index( write_index, max_size );
@@ -110,6 +103,21 @@ protected:
             return false;                    /* ringbuffer is full */
 
         new ( buffer + write_index ) T( t ); // copy-construct
+
+        write_index_.store( next, memory_order_release );
+
+        return true;
+    }
+
+    bool push( T&& t, T* buffer, size_t max_size )
+    {
+        const size_t write_index = write_index_.load( memory_order_relaxed ); // only written from push thread
+        const size_t next        = next_index( write_index, max_size );
+
+        if ( next == read_index_.load( memory_order_acquire ) )
+            return false;                                         /* ringbuffer is full */
+
+        new ( buffer + write_index ) T( std::forward< T >( t ) ); // move-construct
 
         write_index_.store( next, memory_order_release );
 
@@ -138,12 +146,12 @@ protected:
 
         size_t new_write_index = write_index + input_count;
 
-        const ConstIterator last = boost::next( begin, input_count );
+        const ConstIterator last = std::next( begin, input_count );
 
         if ( write_index + input_count > max_size ) {
             /* copy data in two sections */
             const size_t        count0   = max_size - write_index;
-            const ConstIterator midpoint = boost::next( begin, count0 );
+            const ConstIterator midpoint = std::next( begin, count0 );
 
             std::uninitialized_copy( begin, midpoint, internal_buffer + write_index );
             std::uninitialized_copy( midpoint, last, internal_buffer );
@@ -160,7 +168,7 @@ protected:
     }
 
     template < typename Functor >
-    bool consume_one( Functor& functor, T* buffer, size_t max_size )
+    bool consume_one( Functor&& functor, T* buffer, size_t max_size )
     {
         const size_t write_index = write_index_.load( memory_order_acquire );
         const size_t read_index  = read_index_.load( memory_order_relaxed ); // only written from pop thread
@@ -168,7 +176,7 @@ protected:
             return false;
 
         T& object_to_consume = buffer[ read_index ];
-        functor( object_to_consume );
+        functor( std::move( object_to_consume ) );
         object_to_consume.~T();
 
         size_t next = next_index( read_index, max_size );
@@ -177,59 +185,7 @@ protected:
     }
 
     template < typename Functor >
-    bool consume_one( Functor const& functor, T* buffer, size_t max_size )
-    {
-        const size_t write_index = write_index_.load( memory_order_acquire );
-        const size_t read_index  = read_index_.load( memory_order_relaxed ); // only written from pop thread
-        if ( empty( write_index, read_index ) )
-            return false;
-
-        T& object_to_consume = buffer[ read_index ];
-        functor( object_to_consume );
-        object_to_consume.~T();
-
-        size_t next = next_index( read_index, max_size );
-        read_index_.store( next, memory_order_release );
-        return true;
-    }
-
-    template < typename Functor >
-    size_t consume_all( Functor const& functor, T* internal_buffer, size_t max_size )
-    {
-        const size_t write_index = write_index_.load( memory_order_acquire );
-        const size_t read_index  = read_index_.load( memory_order_relaxed ); // only written from pop thread
-
-        const size_t avail = read_available( write_index, read_index, max_size );
-
-        if ( avail == 0 )
-            return 0;
-
-        const size_t output_count = avail;
-
-        size_t new_read_index = read_index + output_count;
-
-        if ( read_index + output_count > max_size ) {
-            /* copy data in two sections */
-            const size_t count0 = max_size - read_index;
-            const size_t count1 = output_count - count0;
-
-            run_functor_and_delete( internal_buffer + read_index, internal_buffer + max_size, functor );
-            run_functor_and_delete( internal_buffer, internal_buffer + count1, functor );
-
-            new_read_index -= max_size;
-        } else {
-            run_functor_and_delete( internal_buffer + read_index, internal_buffer + read_index + output_count, functor );
-
-            if ( new_read_index == max_size )
-                new_read_index = 0;
-        }
-
-        read_index_.store( new_read_index, memory_order_release );
-        return output_count;
-    }
-
-    template < typename Functor >
-    size_t consume_all( Functor& functor, T* internal_buffer, size_t max_size )
+    size_t consume_all( Functor&& functor, T* internal_buffer, size_t max_size )
     {
         const size_t write_index = write_index_.load( memory_order_acquire );
         const size_t read_index  = read_index_.load( memory_order_relaxed ); // only written from pop thread
@@ -282,12 +238,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = output_count - count0;
 
-            copy_and_delete( internal_buffer + read_index, internal_buffer + max_size, output_buffer );
-            copy_and_delete( internal_buffer, internal_buffer + count1, output_buffer + count0 );
+            move_and_delete( internal_buffer + read_index, internal_buffer + max_size, output_buffer );
+            move_and_delete( internal_buffer, internal_buffer + count1, output_buffer + count0 );
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete( internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer );
+            move_and_delete( internal_buffer + read_index, internal_buffer + read_index + output_count, output_buffer );
             if ( new_read_index == max_size )
                 new_read_index = 0;
         }
@@ -313,12 +269,12 @@ protected:
             const size_t count0 = max_size - read_index;
             const size_t count1 = avail - count0;
 
-            it = copy_and_delete( internal_buffer + read_index, internal_buffer + max_size, it );
-            copy_and_delete( internal_buffer, internal_buffer + count1, it );
+            it = move_and_delete( internal_buffer + read_index, internal_buffer + max_size, it );
+            move_and_delete( internal_buffer, internal_buffer + count1, it );
 
             new_read_index -= max_size;
         } else {
-            copy_and_delete( internal_buffer + read_index, internal_buffer + read_index + avail, it );
+            move_and_delete( internal_buffer + read_index, internal_buffer + read_index + avail, it );
             if ( new_read_index == max_size )
                 new_read_index = 0;
         }
@@ -348,11 +304,9 @@ public:
      * */
     void reset( void )
     {
-        if ( !boost::has_trivial_destructor< T >::value ) {
+        if ( !std::is_trivially_destructible< T >::value ) {
             // make sure to call all destructors!
-
-            detail::consume_noop consume_functor;
-            (void)consume_all( consume_functor );
+            consume_all( []( const T& ) {} );
         } else {
             write_index_.store( 0, memory_order_relaxed );
             read_index_.store( 0, memory_order_release );
@@ -385,13 +339,13 @@ private:
     }
 
     template < class OutputIterator >
-    OutputIterator copy_and_delete( T* first, T* last, OutputIterator out )
+    OutputIterator move_and_delete( T* first, T* last, OutputIterator out )
     {
-        if ( boost::has_trivial_destructor< T >::value ) {
+        if ( std::is_trivially_destructible< T >::value ) {
             return std::copy( first, last, out ); // will use memcpy if possible
         } else {
             for ( ; first != last; ++first, ++out ) {
-                *out = *first;
+                *out = std::move( *first );
                 first->~T();
             }
             return out;
@@ -399,19 +353,10 @@ private:
     }
 
     template < class Functor >
-    void run_functor_and_delete( T* first, T* last, Functor& functor )
+    void run_functor_and_delete( T* first, T* last, Functor&& functor )
     {
         for ( ; first != last; ++first ) {
-            functor( *first );
-            first->~T();
-        }
-    }
-
-    template < class Functor >
-    void run_functor_and_delete( T* first, T* last, Functor const& functor )
-    {
-        for ( ; first != last; ++first ) {
-            functor( *first );
+            functor( std::move( *first ) );
             first->~T();
         }
     }
@@ -420,8 +365,8 @@ private:
 template < typename T, std::size_t MaxSize >
 class compile_time_sized_ringbuffer : public ringbuffer_base< T >
 {
-    typedef std::size_t      size_type;
-    static const std::size_t max_size = MaxSize + 1;
+    typedef std::size_t          size_type;
+    static constexpr std::size_t max_size = MaxSize + 1;
 
     typedef
         typename boost::aligned_storage< max_size * sizeof( T ), boost::alignment_of< T >::value >::type storage_type;
@@ -447,36 +392,28 @@ protected:
     ~compile_time_sized_ringbuffer( void )
     {
         // destroy all remaining items
-        detail::consume_noop consume_functor;
-        (void)consume_all( consume_functor );
+        consume_all( []( const T& ) {} );
     }
 
 public:
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return ringbuffer_base< T >::push( t, data(), max_size );
     }
 
+    bool push( T&& t )
+    {
+        return ringbuffer_base< T >::push( std::forward< T >( t ), data(), max_size );
+    }
+
     template < typename Functor >
-    bool consume_one( Functor& f )
+    bool consume_one( Functor&& f )
     {
         return ringbuffer_base< T >::consume_one( f, data(), max_size );
     }
 
     template < typename Functor >
-    bool consume_one( Functor const& f )
-    {
-        return ringbuffer_base< T >::consume_one( f, data(), max_size );
-    }
-
-    template < typename Functor >
-    size_type consume_all( Functor& f )
-    {
-        return ringbuffer_base< T >::consume_all( f, data(), max_size );
-    }
-
-    template < typename Functor >
-    size_type consume_all( Functor const& f )
+    size_type consume_all( Functor&& f )
     {
         return ringbuffer_base< T >::consume_all( f, data(), max_size );
     }
@@ -523,15 +460,11 @@ public:
 template < typename T, typename Alloc >
 class runtime_sized_ringbuffer : public ringbuffer_base< T >, private Alloc
 {
-    typedef std::size_t size_type;
-    size_type           max_elements_;
-#ifdef BOOST_NO_CXX11_ALLOCATOR
-    typedef typename Alloc::pointer pointer;
-#else
+    typedef std::size_t                        size_type;
+    size_type                                  max_elements_;
     typedef std::allocator_traits< Alloc >     allocator_traits;
     typedef typename allocator_traits::pointer pointer;
-#endif
-    pointer array_;
+    pointer                                    array_;
 
 protected:
     size_type max_number_of_elements() const
@@ -543,12 +476,8 @@ public:
     explicit runtime_sized_ringbuffer( size_type max_elements ) :
         max_elements_( max_elements + 1 )
     {
-#ifdef BOOST_NO_CXX11_ALLOCATOR
-        array_ = Alloc::allocate( max_elements_ );
-#else
         Alloc& alloc = *this;
         array_       = allocator_traits::allocate( alloc, max_elements_ );
-#endif
     }
 
     template < typename U >
@@ -556,65 +485,45 @@ public:
         Alloc( alloc ),
         max_elements_( max_elements + 1 )
     {
-#ifdef BOOST_NO_CXX11_ALLOCATOR
-        array_ = Alloc::allocate( max_elements_ );
-#else
         Alloc& allocator = *this;
         array_           = allocator_traits::allocate( allocator, max_elements_ );
-#endif
     }
 
     runtime_sized_ringbuffer( Alloc const& alloc, size_type max_elements ) :
         Alloc( alloc ),
         max_elements_( max_elements + 1 )
     {
-#ifdef BOOST_NO_CXX11_ALLOCATOR
-        array_ = Alloc::allocate( max_elements_ );
-#else
         Alloc& allocator = *this;
         array_           = allocator_traits::allocate( allocator, max_elements_ );
-#endif
     }
 
     ~runtime_sized_ringbuffer( void )
     {
         // destroy all remaining items
-        detail::consume_noop consume_functor;
-        (void)consume_all( consume_functor );
+        consume_all( []( const T& ) {} );
 
-#ifdef BOOST_NO_CXX11_ALLOCATOR
-        Alloc::deallocate( array_, max_elements_ );
-#else
         Alloc& allocator = *this;
         allocator_traits::deallocate( allocator, array_, max_elements_ );
-#endif
     }
 
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return ringbuffer_base< T >::push( t, &*array_, max_elements_ );
     }
 
+    bool push( T&& t )
+    {
+        return ringbuffer_base< T >::push( std::forward< T >( t ), &*array_, max_elements_ );
+    }
+
     template < typename Functor >
-    bool consume_one( Functor& f )
+    bool consume_one( Functor&& f )
     {
         return ringbuffer_base< T >::consume_one( f, &*array_, max_elements_ );
     }
 
     template < typename Functor >
-    bool consume_one( Functor const& f )
-    {
-        return ringbuffer_base< T >::consume_one( f, &*array_, max_elements_ );
-    }
-
-    template < typename Functor >
-    size_type consume_all( Functor& f )
-    {
-        return ringbuffer_base< T >::consume_all( f, &*array_, max_elements_ );
-    }
-
-    template < typename Functor >
-    size_type consume_all( Functor const& f )
+    size_type consume_all( Functor&& f )
     {
         return ringbuffer_base< T >::consume_all( f, &*array_, max_elements_ );
     }
@@ -658,35 +567,30 @@ public:
     }
 };
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, typename A0, typename A1 >
-#else
+typedef parameter::parameters< boost::parameter::optional< tag::capacity >, boost::parameter::optional< tag::allocator > >
+    ringbuffer_signature;
+
 template < typename T, typename... Options >
-#endif
 struct make_ringbuffer
 {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    typedef typename ringbuffer_signature::bind< A0, A1 >::type bound_args;
-#else
     typedef typename ringbuffer_signature::bind< Options... >::type bound_args;
-#endif
 
     typedef extract_capacity< bound_args > extract_capacity_t;
 
-    static const bool   runtime_sized = !extract_capacity_t::has_capacity;
-    static const size_t capacity      = extract_capacity_t::capacity;
+    static constexpr bool   runtime_sized = !extract_capacity_t::has_capacity;
+    static constexpr size_t capacity      = extract_capacity_t::capacity;
 
     typedef extract_allocator< bound_args, T > extract_allocator_t;
+    static constexpr bool                      has_allocator = extract_allocator_t::has_allocator;
     typedef typename extract_allocator_t::type allocator;
 
-    // allocator argument is only sane, for run-time sized ringbuffers
-    BOOST_STATIC_ASSERT( ( mpl::if_< mpl::bool_< !runtime_sized >,
-                                     mpl::bool_< !extract_allocator_t::has_allocator >,
-                                     mpl::true_ >::type::value ) );
+    static constexpr bool signature_is_valid = runtime_sized ? true : !has_allocator;
+    BOOST_STATIC_ASSERT( signature_is_valid );
 
-    typedef typename mpl::if_c< runtime_sized,
+    typedef std::conditional_t< runtime_sized,
                                 runtime_sized_ringbuffer< T, allocator >,
-                                compile_time_sized_ringbuffer< T, capacity > >::type ringbuffer_type;
+                                compile_time_sized_ringbuffer< T, capacity > >
+        ringbuffer_type;
 };
 
 
@@ -705,33 +609,19 @@ struct make_ringbuffer
  *
  *  \b Requirements:
  *  - T must have a default constructor
- *  - T must be copyable
+ *  - T must be copyable or movable
  * */
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0, class A1 >
-#else
 template < typename T, typename... Options >
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_default_constructible_v< T >, std::is_move_assignable_v< T > || std::is_copy_assignable_v< T > )
 #endif
-class spsc_queue :
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    public detail::make_ringbuffer< T, A0, A1 >::ringbuffer_type
-#else
-    public detail::make_ringbuffer< T, Options... >::ringbuffer_type
-#endif
+class spsc_queue : public detail::make_ringbuffer< T, Options... >::ringbuffer_type
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    typedef typename detail::make_ringbuffer< T, A0, A1 >::ringbuffer_type base_type;
-    static const bool runtime_sized = detail::make_ringbuffer< T, A0, A1 >::runtime_sized;
-    typedef typename detail::make_ringbuffer< T, A0, A1 >::allocator allocator_arg;
-#    else
     typedef typename detail::make_ringbuffer< T, Options... >::ringbuffer_type base_type;
-    static const bool runtime_sized = detail::make_ringbuffer< T, Options... >::runtime_sized;
+    static constexpr bool runtime_sized = detail::make_ringbuffer< T, Options... >::runtime_sized;
     typedef typename detail::make_ringbuffer< T, Options... >::allocator allocator_arg;
-#    endif
-
 
     struct implementation_defined
     {
@@ -750,6 +640,9 @@ public:
      *  \pre spsc_queue must be configured to be sized at compile-time
      */
     spsc_queue( void )
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+        requires( !runtime_sized )
+#endif
     {
         // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
         // this function and this function may be compiled even when it isn't being used.
@@ -762,11 +655,9 @@ public:
      *
      *  \note This is just for API compatibility: an allocator isn't actually needed
      */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< !runtime_sized > >
     explicit spsc_queue( typename boost::allocator_rebind< allocator, U >::type const& )
-    {
-        BOOST_STATIC_ASSERT( !runtime_sized );
-    }
+    {}
 
     /** Constructs a spsc_queue with a custom allocator
      *
@@ -774,47 +665,41 @@ public:
      *
      *  \note This is just for API compatibility: an allocator isn't actually needed
      */
+    template < typename Enabler = std::enable_if< !runtime_sized > >
     explicit spsc_queue( allocator const& )
-    {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( !runtime_sized );
-    }
+    {}
 
     /** Constructs a spsc_queue for element_count elements
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
+    template < typename Enabler = std::enable_if< runtime_sized > >
     explicit spsc_queue( size_type element_count ) :
         base_type( element_count )
-    {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( runtime_sized );
-    }
+    {}
 
     /** Constructs a spsc_queue for element_count elements with a custom allocator
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
-    template < typename U >
+    template < typename U, typename Enabler = std::enable_if< runtime_sized > >
     spsc_queue( size_type element_count, typename boost::allocator_rebind< allocator, U >::type const& alloc ) :
         base_type( alloc, element_count )
-    {
-        BOOST_STATIC_ASSERT( runtime_sized );
-    }
+    {}
 
     /** Constructs a spsc_queue for element_count elements with a custom allocator
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
+    template < typename Enabler = std::enable_if< runtime_sized > >
     spsc_queue( size_type element_count, allocator_arg const& alloc ) :
         base_type( alloc, element_count )
-    {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
-        // this function and this function may be compiled even when it isn't being used.
-        BOOST_ASSERT( runtime_sized );
-    }
+    {}
+
+    spsc_queue( const spsc_queue& )            = delete;
+    spsc_queue& operator=( const spsc_queue& ) = delete;
+    spsc_queue( spsc_queue&& )                 = delete;
+    spsc_queue& operator=( spsc_queue&& )      = delete;
 
     /** Pushes object t to the ringbuffer.
      *
@@ -824,9 +709,15 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
-    bool push( T const& t )
+    bool push( const T& t )
     {
         return base_type::push( t );
+    }
+
+    /// \copydoc boost::lockfree::spsc_queue::push(const T& t)
+    bool push( T&& t )
+    {
+        return base_type::push( std::forward< T >( t ) );
     }
 
     /** Pops one object from ringbuffer.
@@ -839,8 +730,7 @@ public:
      */
     bool pop()
     {
-        detail::consume_noop consume_functor;
-        return consume_one( consume_functor );
+        return consume_one( []( const T& ) {} );
     }
 
     /** Pops one object from ringbuffer.
@@ -851,12 +741,49 @@ public:
      *
      * \note Thread-safe and wait-free
      */
-    template < typename U >
-    typename boost::enable_if< typename is_convertible< T, U >::type, bool >::type pop( U& ret )
+    template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
+    bool pop( U& ret )
     {
-        detail::consume_via_copy< U > consume_functor( ret );
-        return consume_one( consume_functor );
+        return consume_one( [ & ]( T&& t ) {
+            ret = std::forward< T >( t );
+        } );
     }
+
+#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
+    /** Pops object from spsc_queue, returning a std::optional<>
+     *
+     * \returns `std::optional` with value if successful, `std::nullopt` if spsc_queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    std::optional< T > pop( uses_optional_t )
+    {
+        T to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+
+    /** Pops object from spsc_queue, returning a std::optional<>
+     *
+     * \pre type T must be convertible to U
+     * \returns `std::optional` with value if successful, `std::nullopt` if spsc_queue is empty.
+     *
+     * \note Thread-safe and non-blocking
+     *
+     * */
+    template < typename U >
+    std::optional< U > pop( uses_optional_t )
+    {
+        U to_dequeue;
+        if ( pop( to_dequeue ) )
+            return to_dequeue;
+        else
+            return std::nullopt;
+    }
+#endif
 
     /** Pushes as many objects from the array t as there is space.
      *
@@ -881,6 +808,19 @@ public:
     size_type push( T const ( &t )[ size ] )
     {
         return push( t, size );
+    }
+
+    /** Pushes as many objects from the span t as there is space available.
+     *
+     * \pre only one thread is allowed to push data to the spsc_queue
+     * \return number of pushed items
+     *
+     * \note Thread-safe and wait-free
+     */
+    template < std::size_t Extent >
+    size_type push( boost::span< const T, Extent > t )
+    {
+        return push( t.data(), t.size() );
     }
 
     /** Pushes as many objects from the range [begin, end) as there is space .
@@ -929,8 +869,7 @@ public:
      * \note Thread-safe and wait-free
      * */
     template < typename OutputIterator >
-    typename boost::disable_if< typename is_convertible< T, OutputIterator >::type, size_type >::type
-    pop( OutputIterator it )
+    typename std::enable_if< !std::is_convertible< T, OutputIterator >::value, size_type >::type pop( OutputIterator it )
     {
         return base_type::pop_to_output_iterator( it );
     }
@@ -944,14 +883,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    bool consume_one( Functor& f )
-    {
-        return base_type::consume_one( f );
-    }
-
-    /// \copydoc boost::lockfree::spsc_queue::consume_one(Functor & rhs)
-    template < typename Functor >
-    bool consume_one( Functor const& f )
+    bool consume_one( Functor&& f )
     {
         return base_type::consume_one( f );
     }
@@ -965,14 +897,7 @@ public:
      * \note Thread-safe and non-blocking, if functor is thread-safe and non-blocking
      * */
     template < typename Functor >
-    size_type consume_all( Functor& f )
-    {
-        return base_type::consume_all( f );
-    }
-
-    /// \copydoc boost::lockfree::spsc_queue::consume_all(Functor & rhs)
-    template < typename Functor >
-    size_type consume_all( Functor const& f )
+    size_type consume_all( Functor&& f )
     {
         return base_type::consume_all( f );
     }
@@ -1028,11 +953,9 @@ public:
      * */
     void reset( void )
     {
-        if ( !boost::has_trivial_destructor< T >::value ) {
+        if ( !std::is_trivially_destructible< T >::value ) {
             // make sure to call all destructors!
-
-            detail::consume_noop consume_functor;
-            (void)consume_all( consume_functor );
+            consume_all( []( const T& ) {} );
         } else {
             base_type::write_index_.store( 0, memory_order_relaxed );
             base_type::read_index_.store( 0, memory_order_release );

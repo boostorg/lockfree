@@ -11,13 +11,10 @@
 
 #ifndef BOOST_DOXYGEN_INVOKED
 
-#    include <cstddef> // size_t
+#    include <cstddef>
+#    include <type_traits>
 
 #    include <boost/config.hpp>
-
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-#        include <boost/parameter/aux_/void.hpp>
-#    endif
 
 namespace boost { namespace lockfree {
 
@@ -34,27 +31,25 @@ struct allocator;
 
 // data structures
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T >,
+              std::is_trivially_assignable_v< T&, T >,
+              std::is_trivially_destructible_v< T > )
 #    endif
 class queue;
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_, class A2 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_copy_assignable_v< T > || std::is_move_assignable_v< T > )
 #    endif
 class stack;
 
-#    ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-template < typename T, class A0 = boost::parameter::void_, class A1 = boost::parameter::void_ >
-#    else
 template < typename T, typename... Options >
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    requires( std::is_default_constructible_v< T >, std::is_move_assignable_v< T > || std::is_copy_assignable_v< T > )
 #    endif
 class spsc_queue;
-
 }}     // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED

@@ -6,8 +6,6 @@
 
 #include <boost/lockfree/stack.hpp>
 
-#include <boost/scoped_ptr.hpp>
-
 #define BOOST_TEST_MAIN
 #ifdef BOOST_LOCKFREE_INCLUDE_TESTS
 #    include <boost/test/included/unit_test.hpp>
@@ -21,7 +19,7 @@
 BOOST_AUTO_TEST_CASE( stack_test_unbounded )
 {
     typedef queue_stress_tester< false > tester_type;
-    boost::scoped_ptr< tester_type >     tester( new tester_type( 4, 4 ) );
+    std::unique_ptr< tester_type >       tester( new tester_type( 4, 4 ) );
 
     boost::lockfree::stack< long > q( 128 );
     tester->run( q );

@@ -95,18 +95,13 @@ BOOST_AUTO_TEST_CASE( queue_consume_one_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    bool success1 = f.consume_one( test_equal( 1 ) );
-    bool success2 = f.consume_one( test_equal( 2 ) );
-#else
     bool success1 = f.consume_one( []( int i ) {
         BOOST_TEST_REQUIRE( i == 1 );
     } );
 
-    bool success2 = f.consume_one( []( int i ) {
+    bool success2 = f.consume_one( []( int i ) mutable {
         BOOST_TEST_REQUIRE( i == 2 );
     } );
-#endif
 
     BOOST_TEST_REQUIRE( success1 );
     BOOST_TEST_REQUIRE( success2 );
@@ -124,11 +119,7 @@ BOOST_AUTO_TEST_CASE( queue_consume_all_test )
     f.push( 1 );
     f.push( 2 );
 
-#ifdef BOOST_NO_CXX11_LAMBDAS
-    size_t consumed = f.consume_all( dummy_functor() );
-#else
     size_t consumed = f.consume_all( []( int i ) {} );
-#endif
 
     BOOST_TEST_REQUIRE( consumed == 2u );
 
@@ -161,18 +152,14 @@ BOOST_AUTO_TEST_CASE( queue_convert_pop_test )
     }
 
     {
-#ifdef BOOST_NO_AUTO_PTR
         unique_ptr< int > i3;
-#else
-        auto_ptr< int > i3;
-#endif
         BOOST_TEST_REQUIRE( f.pop( i3 ) );
 
         BOOST_TEST_REQUIRE( *i3 == 3 );
     }
 
     {
-        boost::shared_ptr< int > i4;
+        std::shared_ptr< int > i4;
         BOOST_TEST_REQUIRE( f.pop( i4 ) );
 
         BOOST_TEST_REQUIRE( *i4 == 4 );
@@ -220,3 +207,40 @@ BOOST_AUTO_TEST_CASE( queue_with_allocator )
         };
     }
 }
+
+BOOST_AUTO_TEST_CASE( move_semantics )
+{
+    boost::lockfree::queue< int, boost::lockfree::capacity< 128 > > stk;
+
+    stk.push( 0 );
+    stk.push( 1 );
+
+    auto two = 2;
+    stk.push( std::move( two ) );
+
+    int out;
+    BOOST_TEST_REQUIRE( stk.pop( out ) );
+    BOOST_TEST_REQUIRE( out == 0 );
+
+    stk.consume_one( []( int one ) {
+        BOOST_TEST_REQUIRE( one == 1 );
+    } );
+
+    stk.consume_all( []( int ) {} );
+}
+
+#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL )
+
+BOOST_AUTO_TEST_CASE( queue_uses_optional )
+{
+    boost::lockfree::queue< int > stk( 5 );
+
+    bool pop_to_nullopt = stk.pop( boost::lockfree::uses_optional ) == std::nullopt;
+    BOOST_TEST_REQUIRE( pop_to_nullopt );
+
+    stk.push( 53 );
+    bool pop_to_optional = stk.pop( boost::lockfree::uses_optional ) == 53;
+    BOOST_TEST_REQUIRE( pop_to_optional );
+}
+
+#endif

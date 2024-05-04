@@ -5,7 +5,6 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/lockfree/spsc_queue.hpp>
-#include <boost/thread.hpp>
 
 #define BOOST_TEST_MAIN
 #ifdef BOOST_LOCKFREE_INCLUDE_TESTS
@@ -14,8 +13,10 @@
 #    include <boost/test/unit_test.hpp>
 #endif
 
+#include <array>
+#include <cstdint>
 #include <iostream>
-#include <memory>
+#include <thread>
 
 #include "test_common.hpp"
 #include "test_helpers.hpp"
@@ -34,7 +35,7 @@ struct spsc_queue_tester
 {
     spsc_queue< int, capacity< 128 > > sf;
 
-    boost::lockfree::detail::atomic< long > spsc_queue_cnt, received_nodes;
+    std::atomic< long > spsc_queue_cnt, received_nodes;
 
 // In VxWorks one RTP just supports 65535 objects
 #ifndef __VXWORKS__
@@ -77,7 +78,7 @@ struct spsc_queue_tester
             return false;
     }
 
-    boost::lockfree::detail::atomic< bool > running;
+    std::atomic< bool > running;
 
     void get( void )
     {
@@ -97,8 +98,13 @@ struct spsc_queue_tester
 
         BOOST_TEST_REQUIRE( sf.empty() );
 
-        boost::thread reader( boost::bind( &spsc_queue_tester::get, this ) );
-        boost::thread writer( boost::bind( &spsc_queue_tester::add, this ) );
+        std::thread reader( [ & ] {
+            get();
+        } );
+
+        std::thread writer( [ & ] {
+            add();
+        } );
         cout << "reader and writer threads created" << endl;
 
         writer.join();
@@ -115,7 +121,7 @@ struct spsc_queue_tester
 
 BOOST_AUTO_TEST_CASE( spsc_queue_test_caching )
 {
-    boost::shared_ptr< spsc_queue_tester > test1( new spsc_queue_tester );
+    std::shared_ptr< spsc_queue_tester > test1( new spsc_queue_tester );
     test1->run();
 }
 
@@ -123,7 +129,7 @@ struct spsc_queue_tester_buffering
 {
     spsc_queue< int, capacity< 128 > > sf;
 
-    boost::lockfree::detail::atomic< long > spsc_queue_cnt;
+    std::atomic< long > spsc_queue_cnt;
 
 // In VxWorks one RTP just supports 65535 objects
 #ifndef __VXWORKS__
@@ -132,7 +138,7 @@ struct spsc_queue_tester_buffering
     static_hashed_set< int, 1 << 15 > working_set;
 #endif
 
-    boost::lockfree::detail::atomic< size_t > received_nodes;
+    std::atomic< size_t > received_nodes;
 
     spsc_queue_tester_buffering( void ) :
         spsc_queue_cnt( 0 ),
@@ -143,7 +149,7 @@ struct spsc_queue_tester_buffering
 
     void add( void )
     {
-        boost::array< int, buf_size > input_buffer;
+        std::array< int, buf_size > input_buffer;
         for ( size_t i = 0; i != nodes_per_thread; i += buf_size ) {
             for ( size_t i = 0; i != buf_size; ++i ) {
                 int id = generate_id< int >();
@@ -154,7 +160,7 @@ struct spsc_queue_tester_buffering
             size_t pushed = 0;
 
             do {
-                pushed += sf.push( input_buffer.c_array() + pushed, input_buffer.size() - pushed );
+                pushed += sf.push( input_buffer.data() + pushed, input_buffer.size() - pushed );
             } while ( pushed != buf_size );
 
             spsc_queue_cnt += buf_size;
@@ -164,9 +170,9 @@ struct spsc_queue_tester_buffering
 
     bool get_elements( void )
     {
-        boost::array< int, buf_size > output_buffer;
+        std::array< int, buf_size > output_buffer;
 
-        size_t popd = sf.pop( output_buffer.c_array(), output_buffer.size() );
+        size_t popd = sf.pop( output_buffer.data(), output_buffer.size() );
 
         if ( popd ) {
             received_nodes += size_t( popd );
@@ -183,7 +189,7 @@ struct spsc_queue_tester_buffering
             return false;
     }
 
-    boost::lockfree::detail::atomic< bool > running;
+    std::atomic< bool > running;
 
     void get( void )
     {
@@ -201,8 +207,14 @@ struct spsc_queue_tester_buffering
     {
         running = true;
 
-        boost::thread reader( boost::bind( &spsc_queue_tester_buffering::get, this ) );
-        boost::thread writer( boost::bind( &spsc_queue_tester_buffering::add, this ) );
+        std::thread reader( [ & ] {
+            get();
+        } );
+
+        std::thread writer( [ & ] {
+            add();
+        } );
+
         cout << "reader and writer threads created" << endl;
 
         writer.join();
@@ -220,6 +232,6 @@ struct spsc_queue_tester_buffering
 
 BOOST_AUTO_TEST_CASE( spsc_queue_test_buffering )
 {
-    boost::shared_ptr< spsc_queue_tester_buffering > test1( new spsc_queue_tester_buffering );
+    std::shared_ptr< spsc_queue_tester_buffering > test1( new spsc_queue_tester_buffering );
     test1->run();
 }

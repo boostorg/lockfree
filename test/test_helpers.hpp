@@ -7,18 +7,17 @@
 #ifndef BOOST_LOCKFREE_TEST_HELPERS
 #define BOOST_LOCKFREE_TEST_HELPERS
 
-#include <boost/array.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/lockfree/detail/atomic.hpp>
 #include <boost/test/test_tools.hpp>
-#include <boost/thread.hpp>
-#include <set>
 
+#include <array>
+#include <atomic>
+#include <mutex>
+#include <set>
 
 template < typename int_type >
 int_type generate_id( void )
 {
-    static boost::lockfree::detail::atomic< int_type > generator( 0 );
+    static std::atomic< int_type > generator( 0 );
     return ++generator;
 }
 
@@ -38,10 +37,9 @@ public:
     {
         std::size_t index = calc_index( id );
 
-        boost::lock_guard< boost::mutex > lock( ref_mutex[ index ] );
+        std::lock_guard< std::mutex > lock( ref_mutex[ index ] );
 
-        std::pair< typename std::set< int_type >::iterator, bool > p;
-        p = data[ index ].insert( id );
+        auto p = data[ index ].insert( id );
 
         return p.second;
     }
@@ -50,7 +48,7 @@ public:
     {
         std::size_t index = calc_index( id );
 
-        boost::lock_guard< boost::mutex > lock( ref_mutex[ index ] );
+        std::lock_guard< std::mutex > lock( ref_mutex[ index ] );
 
         return data[ index ].find( id ) != data[ index ].end();
     }
@@ -59,7 +57,7 @@ public:
     {
         std::size_t index = calc_index( id );
 
-        boost::lock_guard< boost::mutex > lock( ref_mutex[ index ] );
+        std::lock_guard< std::mutex > lock( ref_mutex[ index ] );
 
         if ( data[ index ].find( id ) != data[ index ].end() ) {
             data[ index ].erase( id );
@@ -73,15 +71,15 @@ public:
     {
         std::size_t ret = 0;
         for ( int i = 0; i != buckets; ++i ) {
-            boost::lock_guard< boost::mutex > lock( ref_mutex[ i ] );
+            std::lock_guard< std::mutex > lock( ref_mutex[ i ] );
             ret += data[ i ].size();
         }
         return ret;
     }
 
 private:
-    boost::array< std::set< int_type >, buckets > data;
-    mutable boost::array< boost::mutex, buckets > ref_mutex;
+    std::array< std::set< int_type >, buckets > data;
+    mutable std::array< std::mutex, buckets >   ref_mutex;
 };
 
 struct test_equal
