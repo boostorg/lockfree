@@ -15,7 +15,7 @@ import path ;
 
 doxygen autodoc
     :
-        [ glob ../../../boost/lockfree/*.hpp ]
+        [ glob ../include/boost/lockfree/*.hpp ]
     :
         #<doxygen:param>EXTRACT_ALL=YES
         <doxygen:param>"PREDEFINED=\"BOOST_DOXYGEN_INVOKED\" \\
