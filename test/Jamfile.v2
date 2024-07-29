@@ -12,11 +12,10 @@ lib boost_unit_test_framework ;
 
 project
     : requirements
+        <library>/boost/lockfree//boost_lockfree
         <library>/boost/test//boost_unit_test_framework
-        <library>/boost/atomic//boost_atomic
         <library>/boost/thread//boost_thread
         <library>/boost/interprocess//boost_interprocess
-        <library>/boost/foreach//boost_foreach
     ;
 
 
