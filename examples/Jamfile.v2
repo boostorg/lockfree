@@ -4,6 +4,7 @@
 
 project
     : requirements
+        <library>/boost/lockfree//boost_lockfree
         <library>/boost/thread//boost_thread
         <library>/boost/atomic//boost_atomic
     ;
