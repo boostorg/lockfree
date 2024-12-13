@@ -51,6 +51,11 @@ jobs:
             os: ubuntu-22.04
             install: g++-13
             supported: true
+          - toolset: gcc-14
+            cxxstd: "14,17,20"
+            os: ubuntu-24.04
+            install: g++-14
+            supported: true
           - toolset: clang
             install: clang-10
             compiler: clang++-10
@@ -107,11 +112,6 @@ jobs:
           #   supported: true
 
           # macos
-          - description: macos-12
-            toolset: clang
-            cxxstd: "14,17,20"
-            os: macos-12
-            supported: true
           - description: macos-13
             toolset: clang
             cxxstd: "14,17,20"
@@ -121,6 +121,11 @@ jobs:
             toolset: clang
             cxxstd: "14,17,2a"
             os: macos-14
+            supported: true
+          - description: macos-15
+            toolset: clang
+            cxxstd: "14,17,20"
+            os: macos-15
             supported: true
 
 
@@ -231,40 +236,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - description: msvc-14.2-32
-            toolset: msvc-14.2
-            cxxstd: "14,17"
-            cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
-            supported: true
-            addrmd: 32
+          - toolset: msvc-14.0
+            cxxstd: "14,latest"
+            addrmd: 32,64
             os: windows-2019
-          - description: msvc-14.3-32
-            toolset: msvc-14.3
-            cxxstd: "14,17,20"
-            cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
-            addrmd: 32
+          - toolset: msvc-14.2
+            cxxstd: "14,17,20,latest"
+            addrmd: 32,64
             os: windows-2019
-          - description: msvc-14.2-64
-            toolset: msvc-14.2
-            cxxstd: "14,17"
-            cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
-            addrmd: 64
-            os: windows-2019
-          - description: msvc-14.3-64
-            toolset: msvc-14.3
-            cxxstd: "14,17,20"
-            cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
+          - toolset: msvc-14.3
+            cxxstd: "14,17,20,latest"
+            addrmd: 32,64
+            os: windows-2022
             supported: true
-            addrmd: 64
-            os: windows-2019
+          - toolset: clang-win
+            cxxstd: "14,17,20,latest"
+            addrmd: 32,64
+            os: windows-2022
+            supported: true
           - toolset: gcc
             cxxstd: "14,17,2a"
             addrmd: 64
-            cxxflags: "cxxflags=-Wa,-mbig-obj"
-            supported: true
             os: windows-2019
+            supported: true
 
     needs: [runner-selection]
     # runs-on: ${{ fromJSON(needs.runner-selection.outputs.labelmatrix)[matrix.os] }}
@@ -329,9 +325,9 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-12
           - os: macos-13
           - os: macos-14
+          - os: macos-15
 
     runs-on: ${{matrix.os}}
 
@@ -377,9 +373,9 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-12
           - os: macos-13
           - os: macos-14
+          - os: macos-15
 
     runs-on: ${{matrix.os}}
 
@@ -435,9 +431,9 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-12
           - os: macos-13
           - os: macos-14
+          - os: macos-15
 
     runs-on: ${{matrix.os}}
 
