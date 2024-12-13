@@ -23,22 +23,20 @@
 
 #include "test_helpers.hpp"
 
-using boost::lockfree::detail::atomic;
-
-atomic< bool > test_running( false );
+std::atomic< bool > test_running( false );
 
 struct dummy
 {
     dummy( void )
     {
-        if ( test_running.load( boost::lockfree::detail::memory_order_relaxed ) )
+        if ( test_running.load( std::memory_order_relaxed ) )
             assert( allocated == 0 );
         allocated = 1;
     }
 
     ~dummy( void )
     {
-        if ( test_running.load( boost::lockfree::detail::memory_order_relaxed ) )
+        if ( test_running.load( std::memory_order_relaxed ) )
             assert( allocated == 1 );
         allocated = 0;
     }
@@ -131,7 +129,7 @@ struct freelist_tester
     freelist_type                    fl;
     boost::lockfree::queue< dummy* > allocated_nodes;
 
-    atomic< bool >                       running;
+    std::atomic< bool >                  running;
     static_hashed_set< dummy*, 1 << 16 > working_set;
 
 

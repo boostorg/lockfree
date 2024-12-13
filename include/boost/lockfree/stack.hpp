@@ -20,7 +20,6 @@
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
 
-#include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
@@ -260,7 +259,7 @@ private:
 
     void link_nodes_atomic( node* new_top_node, node* end_node )
     {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_relaxed );
+        tagged_node_handle old_tos = tos.load( std::memory_order_relaxed );
         for ( ;; ) {
             tagged_node_handle new_tos( pool.get_handle( new_top_node ), old_tos.get_tag() );
             end_node->next = pool.get_handle( old_tos );
@@ -272,12 +271,12 @@ private:
 
     void link_nodes_unsafe( node* new_top_node, node* end_node )
     {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_relaxed );
+        tagged_node_handle old_tos = tos.load( std::memory_order_relaxed );
 
         tagged_node_handle new_tos( pool.get_handle( new_top_node ), old_tos.get_tag() );
         end_node->next = pool.get_handle( old_tos );
 
-        tos.store( new_tos, memory_order_relaxed );
+        tos.store( new_tos, std::memory_order_relaxed );
     }
 
     template < bool Threadsafe, bool Bounded, typename ConstIterator >
@@ -613,7 +612,7 @@ public:
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
     bool unsynchronized_pop( U& ret )
     {
-        tagged_node_handle old_tos         = tos.load( detail::memory_order_relaxed );
+        tagged_node_handle old_tos         = tos.load( std::memory_order_relaxed );
         node*              old_tos_pointer = pool.get_pointer( old_tos );
 
         if ( !pool.get_pointer( old_tos ) )
@@ -622,7 +621,7 @@ public:
         node*              new_tos_ptr = pool.get_pointer( old_tos_pointer->next );
         tagged_node_handle new_tos( pool.get_handle( new_tos_ptr ), old_tos.get_next_tag() );
 
-        tos.store( new_tos, memory_order_relaxed );
+        tos.store( new_tos, std::memory_order_relaxed );
         ret = std::move( old_tos_pointer->v );
         pool.template destruct< false >( old_tos );
         return true;
@@ -639,7 +638,7 @@ public:
     template < typename Functor >
     bool consume_one( Functor&& f )
     {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos = tos.load( std::memory_order_consume );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -686,7 +685,7 @@ public:
     size_t consume_all_atomic( Functor&& f )
     {
         size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos       = tos.load( std::memory_order_consume );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -733,7 +732,7 @@ public:
     size_t consume_all_atomic_reversed( Functor&& f )
     {
         size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos       = tos.load( std::memory_order_consume );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -798,7 +797,7 @@ public:
 
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    detail::atomic< tagged_node_handle > tos;
+    std::atomic< tagged_node_handle > tos;
 
     static const int padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
     char             padding[ padding_size ];

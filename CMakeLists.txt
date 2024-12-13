@@ -26,7 +26,6 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23 AND BOOST_LOCKFREE_USE_FILE_SET)
         include/boost/lockfree/policies.hpp
         include/boost/lockfree/queue.hpp
         include/boost/lockfree/lockfree_forward.hpp
-        include/boost/lockfree/detail/atomic.hpp
         include/boost/lockfree/detail/copy_payload.hpp
         include/boost/lockfree/detail/freelist.hpp
         include/boost/lockfree/detail/parameter.hpp
@@ -48,7 +47,6 @@ target_link_libraries(boost_lockfree
   INTERFACE
     Boost::align
     Boost::assert
-    Boost::atomic
     Boost::config
     Boost::core
     Boost::parameter

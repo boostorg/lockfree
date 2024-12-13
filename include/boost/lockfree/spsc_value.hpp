@@ -15,18 +15,18 @@
 #    pragma once
 #endif
 
-#include <boost/lockfree/detail/atomic.hpp>
-#include <boost/lockfree/detail/parameter.hpp>
-#include <boost/lockfree/detail/uses_optional.hpp>
-#include <boost/lockfree/lockfree_forward.hpp>
-#include <boost/lockfree/policies.hpp>
+#include <array>
+#include <atomic>
+#include <cstdint>
+#include <optional>
 
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
 
-#include <array>
-#include <cstdint>
-#include <optional>
+#include <boost/lockfree/detail/parameter.hpp>
+#include <boost/lockfree/detail/uses_optional.hpp>
+#include <boost/lockfree/lockfree_forward.hpp>
+#include <boost/lockfree/policies.hpp>
 
 namespace boost { namespace lockfree {
 
@@ -264,11 +264,11 @@ private:
     std::array< cache_aligned_value, 3 > m_buffer;
 
     alignas( detail::cacheline_bytes ) tagged_index m_write_index { 0 };
-    alignas( detail::cacheline_bytes ) detail::atomic< tagged_index > m_available_index { 1 };
+    alignas( detail::cacheline_bytes ) std::atomic< tagged_index > m_available_index { 1 };
     alignas( detail::cacheline_bytes ) tagged_index m_read_index { 2 };
 #endif
 };
 
-}}     // namespace boost::lockfree
+}} // namespace boost::lockfree
 
 #endif /* BOOST_LOCKFREE_SPSC_VALUE_HPP_INCLUDED */

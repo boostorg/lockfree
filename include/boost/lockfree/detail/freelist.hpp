@@ -10,6 +10,7 @@
 #define BOOST_LOCKFREE_FREELIST_HPP_INCLUDED
 
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -20,7 +21,6 @@
 #include <boost/config.hpp>
 #include <boost/throw_exception.hpp>
 
-#include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 
@@ -181,7 +181,7 @@ private:
     template < bool Bounded >
     T* allocate_impl( void )
     {
-        tagged_node_ptr old_pool = pool_.load( memory_order_consume );
+        tagged_node_ptr old_pool = pool_.load( std::memory_order_consume );
 
         for ( ;; ) {
             if ( !old_pool.get_ptr() ) {
@@ -206,7 +206,7 @@ private:
     template < bool Bounded >
     T* allocate_impl_unsafe( void )
     {
-        tagged_node_ptr old_pool = pool_.load( memory_order_relaxed );
+        tagged_node_ptr old_pool = pool_.load( std::memory_order_relaxed );
 
         if ( !old_pool.get_ptr() ) {
             if ( !Bounded ) {
@@ -220,7 +220,7 @@ private:
         freelist_node*  new_pool_ptr = old_pool->next.get_ptr();
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
 
-        pool_.store( new_pool, memory_order_relaxed );
+        pool_.store( new_pool, std::memory_order_relaxed );
         void* ptr = old_pool.get_ptr();
         return reinterpret_cast< T* >( ptr );
     }
@@ -239,7 +239,7 @@ private:
     void deallocate_impl( T* n )
     {
         void*           node         = n;
-        tagged_node_ptr old_pool     = pool_.load( memory_order_consume );
+        tagged_node_ptr old_pool     = pool_.load( std::memory_order_consume );
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
         for ( ;; ) {
@@ -254,16 +254,16 @@ private:
     void deallocate_impl_unsafe( T* n )
     {
         void*           node         = n;
-        tagged_node_ptr old_pool     = pool_.load( memory_order_relaxed );
+        tagged_node_ptr old_pool     = pool_.load( std::memory_order_relaxed );
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_tag() );
         new_pool->next.set_ptr( old_pool.get_ptr() );
 
-        pool_.store( new_pool, memory_order_relaxed );
+        pool_.store( new_pool, std::memory_order_relaxed );
     }
 
-    atomic< tagged_node_ptr > pool_;
+    std::atomic< tagged_node_ptr > pool_;
 };
 
 class alignas( 4 ) tagged_index
@@ -559,7 +559,7 @@ protected: // allow use from subclasses
 private:
     index_t allocate_impl( void )
     {
-        tagged_index old_pool = pool_.load( memory_order_consume );
+        tagged_index old_pool = pool_.load( std::memory_order_consume );
 
         for ( ;; ) {
             index_t index = old_pool.get_index();
@@ -578,7 +578,7 @@ private:
 
     index_t allocate_impl_unsafe( void )
     {
-        tagged_index old_pool = pool_.load( memory_order_consume );
+        tagged_index old_pool = pool_.load( std::memory_order_consume );
 
         index_t index = old_pool.get_index();
         if ( index == null_handle() )
@@ -589,7 +589,7 @@ private:
 
         tagged_index new_pool( next_index->get_index(), old_pool.get_next_tag() );
 
-        pool_.store( new_pool, memory_order_relaxed );
+        pool_.store( new_pool, std::memory_order_relaxed );
         return old_pool.get_index();
     }
 
@@ -605,7 +605,7 @@ private:
     void deallocate_impl( index_t index )
     {
         freelist_node* new_pool_node = reinterpret_cast< freelist_node* >( NodeStorage::nodes() + index );
-        tagged_index   old_pool      = pool_.load( memory_order_consume );
+        tagged_index   old_pool      = pool_.load( std::memory_order_consume );
 
         for ( ;; ) {
             tagged_index new_pool( index, old_pool.get_tag() );
@@ -619,7 +619,7 @@ private:
     void deallocate_impl_unsafe( index_t index )
     {
         freelist_node* new_pool_node = reinterpret_cast< freelist_node* >( NodeStorage::nodes() + index );
-        tagged_index   old_pool      = pool_.load( memory_order_consume );
+        tagged_index   old_pool      = pool_.load( std::memory_order_consume );
 
         tagged_index new_pool( index, old_pool.get_tag() );
         new_pool_node->next.set_index( old_pool.get_index() );
@@ -627,7 +627,7 @@ private:
         pool_.store( new_pool );
     }
 
-    atomic< tagged_index > pool_;
+    std::atomic< tagged_index > pool_;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

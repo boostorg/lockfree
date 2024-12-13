@@ -16,19 +16,20 @@
 #    pragma once
 #endif
 
+#include <atomic>
+#include <optional>
+
 #include <boost/assert.hpp>
 #include <boost/core/allocator_access.hpp>
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
 
-#include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
-
 
 #if defined( _MSC_VER )
 #    pragma warning( push )
@@ -41,8 +42,6 @@
                                      // gets erronously triggered the queue constructor which
                                      // takes an allocator of another type and rebinds it
 #endif
-
-#include <optional>
 
 namespace boost { namespace lockfree {
 
@@ -113,9 +112,9 @@ private:
             data( v )
         {
             /* increment tag to avoid ABA problem */
-            tagged_node_handle old_next = next.load( memory_order_relaxed );
+            tagged_node_handle old_next = next.load( std::memory_order_relaxed );
             tagged_node_handle new_next( null_handle, old_next.get_next_tag() );
-            next.store( new_next, memory_order_release );
+            next.store( new_next, std::memory_order_release );
         }
 
         node( handle_type null_handle ) :
@@ -125,7 +124,7 @@ private:
         node( void )
         {}
 
-        atomic< tagged_node_handle > next;
+        std::atomic< tagged_node_handle > next;
         T                            data;
     };
 
@@ -138,8 +137,8 @@ private:
     {
         node*              n = pool.template construct< true, false >( pool.null_handle() );
         tagged_node_handle dummy_node( pool.get_handle( n ), 0 );
-        head_.store( dummy_node, memory_order_relaxed );
-        tail_.store( dummy_node, memory_order_release );
+        head_.store( dummy_node, std::memory_order_relaxed );
+        tail_.store( dummy_node, std::memory_order_release );
     }
 
     struct implementation_defined
@@ -283,7 +282,7 @@ public:
     {
         consume_all( []( const T& ) {} );
 
-        pool.template destruct< false >( head_.load( memory_order_relaxed ) );
+        pool.template destruct< false >( head_.load( std::memory_order_relaxed ) );
     }
 
     /** Check if the queue is empty
@@ -360,12 +359,12 @@ private:
             return false;
 
         for ( ;; ) {
-            tagged_node_handle tail      = tail_.load( memory_order_acquire );
+            tagged_node_handle tail      = tail_.load( std::memory_order_acquire );
             node*              tail_node = pool.get_pointer( tail );
-            tagged_node_handle next      = tail_node->next.load( memory_order_acquire );
+            tagged_node_handle next      = tail_node->next.load( std::memory_order_acquire );
             node*              next_ptr  = pool.get_pointer( next );
 
-            tagged_node_handle tail2 = tail_.load( memory_order_acquire );
+            tagged_node_handle tail2 = tail_.load( std::memory_order_acquire );
             if ( BOOST_LIKELY( tail == tail2 ) ) {
                 if ( next_ptr == 0 ) {
                     tagged_node_handle new_tail_next( node_handle, next.get_next_tag() );
@@ -401,16 +400,16 @@ public:
             return false;
 
         for ( ;; ) {
-            tagged_node_handle tail     = tail_.load( memory_order_relaxed );
-            tagged_node_handle next     = tail->next.load( memory_order_relaxed );
+            tagged_node_handle tail     = tail_.load( std::memory_order_relaxed );
+            tagged_node_handle next     = tail->next.load( std::memory_order_relaxed );
             node*              next_ptr = next.get_ptr();
 
             if ( next_ptr == 0 ) {
-                tail->next.store( tagged_node_handle( n, next.get_next_tag() ), memory_order_relaxed );
-                tail_.store( tagged_node_handle( n, tail.get_next_tag() ), memory_order_relaxed );
+                tail->next.store( tagged_node_handle( n, next.get_next_tag() ), std::memory_order_relaxed );
+                tail_.store( tagged_node_handle( n, tail.get_next_tag() ), std::memory_order_relaxed );
                 return true;
             } else
-                tail_.store( tagged_node_handle( next_ptr, tail.get_next_tag() ), memory_order_relaxed );
+                tail_.store( tagged_node_handle( next_ptr, tail.get_next_tag() ), std::memory_order_relaxed );
         }
     }
 
@@ -438,14 +437,14 @@ public:
     bool pop( U& ret )
     {
         for ( ;; ) {
-            tagged_node_handle head     = head_.load( memory_order_acquire );
+            tagged_node_handle head     = head_.load( std::memory_order_acquire );
             node*              head_ptr = pool.get_pointer( head );
 
-            tagged_node_handle tail     = tail_.load( memory_order_acquire );
-            tagged_node_handle next     = head_ptr->next.load( memory_order_acquire );
+            tagged_node_handle tail     = tail_.load( std::memory_order_acquire );
+            tagged_node_handle next     = head_ptr->next.load( std::memory_order_acquire );
             node*              next_ptr = pool.get_pointer( next );
 
-            tagged_node_handle head2 = head_.load( memory_order_acquire );
+            tagged_node_handle head2 = head_.load( std::memory_order_acquire );
             if ( BOOST_LIKELY( head == head2 ) ) {
                 if ( pool.get_handle( head ) == pool.get_handle( tail ) ) {
                     if ( next_ptr == 0 )
@@ -535,10 +534,10 @@ public:
     bool unsynchronized_pop( U& ret )
     {
         for ( ;; ) {
-            tagged_node_handle head     = head_.load( memory_order_relaxed );
+            tagged_node_handle head     = head_.load( std::memory_order_relaxed );
             node*              head_ptr = pool.get_pointer( head );
-            tagged_node_handle tail     = tail_.load( memory_order_relaxed );
-            tagged_node_handle next     = head_ptr->next.load( memory_order_relaxed );
+            tagged_node_handle tail     = tail_.load( std::memory_order_relaxed );
+            tagged_node_handle next     = head_ptr->next.load( std::memory_order_relaxed );
             node*              next_ptr = pool.get_pointer( next );
 
             if ( pool.get_handle( head ) == pool.get_handle( tail ) ) {
@@ -603,10 +602,10 @@ public:
 
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    atomic< tagged_node_handle > head_;
+    std::atomic< tagged_node_handle > head_;
     static constexpr size_t      padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
     char                         padding1[ padding_size ];
-    atomic< tagged_node_handle > tail_;
+    std::atomic< tagged_node_handle > tail_;
     char                         padding2[ padding_size ];
 
     pool_t pool;
