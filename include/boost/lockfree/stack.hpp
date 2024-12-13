@@ -7,6 +7,12 @@
 #ifndef BOOST_LOCKFREE_STACK_HPP_INCLUDED
 #define BOOST_LOCKFREE_STACK_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
+
 #include <boost/assert.hpp>
 #include <boost/core/allocator_access.hpp>
 #include <boost/core/no_exceptions_support.hpp>
@@ -25,10 +31,6 @@
 
 #include <tuple>
 #include <type_traits>
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#    pragma once
-#endif
 
 namespace boost { namespace lockfree {
 namespace detail {
