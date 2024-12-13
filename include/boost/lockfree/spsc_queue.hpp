@@ -10,13 +10,17 @@
 #ifndef BOOST_LOCKFREE_SPSC_QUEUE_HPP_INCLUDED
 #define BOOST_LOCKFREE_SPSC_QUEUE_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
 #include <algorithm>
 #include <memory>
 #include <type_traits>
 
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY
 #include <boost/core/allocator_access.hpp>
 #include <boost/core/span.hpp>
 #include <boost/parameter/optional.hpp>
@@ -29,10 +33,6 @@
 #include <boost/lockfree/detail/prefix.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#    pragma once
-#endif
 
 namespace boost { namespace lockfree {
 namespace detail {

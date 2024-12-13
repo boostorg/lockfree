@@ -9,6 +9,11 @@
 #ifndef BOOST_LOCKFREE_POLICIES_HPP_INCLUDED
 #define BOOST_LOCKFREE_POLICIES_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
 #include <boost/parameter/template_keyword.hpp>
 
 #include <type_traits>

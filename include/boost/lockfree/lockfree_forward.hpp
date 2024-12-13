@@ -8,13 +8,18 @@
 #ifndef BOOST_LOCKFREE_FORWARD_HPP_INCLUDED
 #define BOOST_LOCKFREE_FORWARD_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
 
 #ifndef BOOST_DOXYGEN_INVOKED
 
 #    include <cstddef>
-#    include <type_traits>
-
-#    include <boost/config.hpp>
+#    if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+#        include <type_traits>
+#    endif
 
 namespace boost { namespace lockfree {
 
@@ -57,5 +62,4 @@ struct spsc_value;
 }}     // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED
-
 #endif // BOOST_LOCKFREE_FORWARD_HPP_INCLUDED
