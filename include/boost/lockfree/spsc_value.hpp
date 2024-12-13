@@ -13,7 +13,7 @@
 #include <boost/config.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
-#pragma once
+#    pragma once
 #endif
 
 #include <boost/lockfree/detail/atomic.hpp>
@@ -38,8 +38,7 @@
 
 #endif
 
-namespace boost {
-namespace lockfree {
+namespace boost { namespace lockfree {
 
 /** The spcs_value provides a single-writer/single-reader value, implemented by a triple buffer
  *
@@ -330,8 +329,7 @@ private:
 #endif
 };
 
-} // namespace boost::lockfree
-} // namespace boost
+}} // namespace boost::lockfree
 
 #undef ifconstexpr
 
