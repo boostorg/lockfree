@@ -11,8 +11,12 @@
 #ifndef BOOST_LOCKFREE_FIFO_HPP_INCLUDED
 #define BOOST_LOCKFREE_FIFO_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
 #include <boost/assert.hpp>
-#include <boost/config.hpp> // for BOOST_LIKELY & BOOST_ALIGNMENT
 #include <boost/core/allocator_access.hpp>
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
@@ -25,10 +29,6 @@
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#    pragma once
-#endif
 
 
 #if defined( _MSC_VER )
