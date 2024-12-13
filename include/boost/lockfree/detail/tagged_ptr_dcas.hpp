@@ -12,22 +12,20 @@
 #include <cstddef> /* for std::size_t */
 #include <limits>
 
-#include <boost/config.hpp>
 #include <boost/predef.h>
 
 namespace boost { namespace lockfree { namespace detail {
 
+#if BOOST_COMP_MSVC && BOOST_ARCH_X86_64
+inline constexpr size_t tagged_ptr_alignment = 16;
+#elif BOOST_COMP_MSVC && BOOST_ARCH_X86_32
+inline constexpr size_t tagged_ptr_alignment = 8;
+#else
+inline constexpr size_t tagged_ptr_alignment = 2 * sizeof( void* );
+#endif
 
 template < class T >
-class
-#if BOOST_COMP_MSVC && BOOST_ARCH_X86_64
-    BOOST_ALIGNMENT( 16 )
-#elif BOOST_COMP_MSVC && BOOST_ARCH_X86_32
-    BOOST_ALIGNMENT( 8 )
-#else
-    BOOST_ALIGNMENT( 2 * sizeof( void* ) )
-#endif
-        tagged_ptr
+class alignas( tagged_ptr_alignment ) tagged_ptr
 {
 public:
     typedef std::size_t tag_t;

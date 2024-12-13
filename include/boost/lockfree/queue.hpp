@@ -20,7 +20,6 @@
 #include <boost/core/allocator_access.hpp>
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
-#include <boost/static_assert.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -43,6 +42,7 @@
                                      // takes an allocator of another type and rebinds it
 #endif
 
+#include <optional>
 
 namespace boost { namespace lockfree {
 
@@ -92,8 +92,8 @@ class queue
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
 
-    BOOST_STATIC_ASSERT( ( std::is_trivially_destructible< T >::value ) );
-    BOOST_STATIC_ASSERT( ( std::is_trivially_assignable< T&, T >::value ) );
+    static_assert( ( std::is_trivially_destructible< T >::value ) );
+    static_assert( ( std::is_trivially_assignable< T&, T >::value ) );
 
     typedef typename detail::queue_signature::bind< Options... >::type bound_args;
 
@@ -104,7 +104,7 @@ private:
     static constexpr bool node_based         = !( has_capacity || fixed_sized );
     static constexpr bool compile_time_sized = has_capacity;
 
-    struct BOOST_ALIGNMENT( BOOST_LOCKFREE_CACHELINE_BYTES ) node
+    struct alignas( detail::cacheline_bytes ) node
     {
         typedef typename detail::select_tagged_handle< node, node_based >::tagged_handle_type tagged_node_handle;
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type        handle_type;
@@ -181,7 +181,7 @@ public:
         tail_( tagged_node_handle( 0, 0 ) ),
         pool( node_allocator(), capacity )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // Don't use static_assert() here since it will be evaluated when compiling
         // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT( has_capacity );
         initialize();
@@ -474,7 +474,6 @@ public:
         }
     }
 
-#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
     /** Pops object from queue, returning a std::optional<>
      *
      * \returns `std::optional` with value if successful, `std::nullopt` if queue is empty.
@@ -508,7 +507,6 @@ public:
         else
             return std::nullopt;
     }
-#endif
 
     /** Pops object from queue.
      *
@@ -606,7 +604,7 @@ public:
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
     atomic< tagged_node_handle > head_;
-    static constexpr int         padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( tagged_node_handle );
+    static constexpr size_t      padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
     char                         padding1[ padding_size ];
     atomic< tagged_node_handle > tail_;
     char                         padding2[ padding_size ];

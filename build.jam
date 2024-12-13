@@ -12,9 +12,7 @@ constant boost_dependencies :
     /boost/config//boost_config
     /boost/core//boost_core
     /boost/parameter//boost_parameter
-    /boost/predef//boost_predef
-    /boost/static_assert//boost_static_assert
-    /boost/type_traits//boost_type_traits ;
+    /boost/predef//boost_predef ;
 
 project /boost/lockfree
     : common-requirements

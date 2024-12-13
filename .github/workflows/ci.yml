@@ -32,76 +32,76 @@ jobs:
       matrix:
         include:
           - toolset: gcc-10
-            cxxstd: "14,17,2a"
+            cxxstd: "17,2a"
             os: ubuntu-22.04
             install: g++-10
             supported: true
           - toolset: gcc-11
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-22.04
             install: g++-11
             supported: true
           - toolset: gcc-12
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-22.04
             install: g++-12
             supported: true
           - toolset: gcc-13
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-22.04
             install: g++-13
             supported: true
           - toolset: clang
             install: clang-10
             compiler: clang++-10
-            cxxstd: "14,17,2a"
+            cxxstd: "17,2a"
             os: ubuntu-20.04
             supported: true
           - toolset: clang
             install: clang-11
             compiler: clang++-11
-            cxxstd: "14,17,2a"
+            cxxstd: "17,2a"
             os: ubuntu-20.04
             supported: true
           - toolset: clang
             install: clang-12
             compiler: clang++-12
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-latest
             supported: true
           - toolset: clang
             install: clang-13
             compiler: clang++-13
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-latest
             supported: true
           - toolset: clang
             install: clang-14
             compiler: clang++-14
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-latest
             supported: true
           - toolset: clang
             install: clang-15
             compiler: clang++-15
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: ubuntu-latest
             supported: true
           # - toolset: clang
           #   install: clang-16
           #   compiler: clang++-16
-          #   cxxstd: "14,17,20"
+          #   cxxstd: "17,20"
           #   os: ubuntu-latest
           #   supported: true
           # - toolset: clang
           #   compiler: clang++-17
-          #   cxxstd: "14,17,20,2b"
+          #   cxxstd: "17,20,2b"
           #   os: ubuntu-latest
           #   install: clang-17
           #   supported: true
           # - toolset: clang
           #   compiler: clang++-18
-          #   cxxstd: "14,17,20,2b"
+          #   cxxstd: "17,20,2b"
           #   os: ubuntu-latest
           #   install: clang-18
           #   supported: true
@@ -109,17 +109,17 @@ jobs:
           # macos
           - description: macos-12
             toolset: clang
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: macos-12
             supported: true
           - description: macos-13
             toolset: clang
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             os: macos-13
             supported: true
           - description: macos-14
             toolset: clang
-            cxxstd: "14,17,2a"
+            cxxstd: "17,2a"
             os: macos-14
             supported: true
 
@@ -233,34 +233,34 @@ jobs:
         include:
           - description: msvc-14.2-32
             toolset: msvc-14.2
-            cxxstd: "14,17"
+            cxxstd: "17"
             cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
             addrmd: 32
             os: windows-2019
           - description: msvc-14.3-32
             toolset: msvc-14.3
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
             addrmd: 32
             os: windows-2019
           - description: msvc-14.2-64
             toolset: msvc-14.2
-            cxxstd: "14,17"
+            cxxstd: "17"
             cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
             addrmd: 64
             os: windows-2019
           - description: msvc-14.3-64
             toolset: msvc-14.3
-            cxxstd: "14,17,20"
+            cxxstd: "17,20"
             cxxflags: "cxxflags=-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1"
             supported: true
             addrmd: 64
             os: windows-2019
           - toolset: gcc
-            cxxstd: "14,17,2a"
+            cxxstd: "17,2a"
             addrmd: 64
             cxxflags: "cxxflags=-Wa,-mbig-obj"
             supported: true

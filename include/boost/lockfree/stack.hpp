@@ -19,7 +19,6 @@
 #include <boost/core/span.hpp>
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
-#include <boost/static_assert.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -29,6 +28,7 @@
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
 
+#include <optional>
 #include <tuple>
 #include <type_traits>
 
@@ -71,7 +71,7 @@ class stack
 {
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    BOOST_STATIC_ASSERT( std::is_copy_constructible< T >::value || std::is_move_constructible< T >::value );
+    static_assert( std::is_copy_constructible< T >::value || std::is_move_constructible< T >::value );
 
     typedef typename detail::stack_signature::bind< Options... >::type bound_args;
 
@@ -105,7 +105,7 @@ private:
     // check compile-time capacity
     static constexpr bool capacity_is_valid = has_capacity ? capacity - 1 < std::numeric_limits< std::uint16_t >::max()
                                                            : true;
-    BOOST_STATIC_ASSERT( capacity_is_valid );
+    static_assert( capacity_is_valid );
 
     struct implementation_defined
     {
@@ -144,7 +144,7 @@ public:
         :
         pool( node_allocator(), capacity )
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // Don't use static_assert() here since it will be evaluated when compiling
         // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT( has_capacity );
         initialize();
@@ -554,7 +554,6 @@ public:
         } );
     }
 
-#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
     /** Pops object from stack, returning a std::optional<>
      *
      * \returns `std::optional` with value if successful, `std::nullopt` if stack is empty.
@@ -588,7 +587,6 @@ public:
         else
             return std::nullopt;
     }
-#endif
 
     /** Pops object from stack.
      *
@@ -802,7 +800,7 @@ private:
 #ifndef BOOST_DOXYGEN_INVOKED
     detail::atomic< tagged_node_handle > tos;
 
-    static const int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( tagged_node_handle );
+    static const int padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
     char             padding[ padding_size ];
 
     pool_t pool;

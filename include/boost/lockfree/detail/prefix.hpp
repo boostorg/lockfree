@@ -7,21 +7,30 @@
 #ifndef BOOST_LOCKFREE_PREFIX_HPP_INCLUDED
 #define BOOST_LOCKFREE_PREFIX_HPP_INCLUDED
 
+#include <cstring>
+
+#include <boost/predef.h>
+
 /* this file defines the following macros:
-   BOOST_LOCKFREE_CACHELINE_BYTES: size of a cache line
    BOOST_LOCKFREE_PTR_COMPRESSION: use tag/pointer compression to utilize parts
                                    of the virtual address space as tag (at least 16bit)
 */
 
-#if defined( __s390__ ) || defined( __s390x__ )
-#    define BOOST_LOCKFREE_CACHELINE_BYTES 256
-#elif defined( powerpc ) || defined( __powerpc__ ) || defined( __ppc__ )
-#    define BOOST_LOCKFREE_CACHELINE_BYTES 128
+namespace boost { namespace lockfree { namespace detail {
+
+#if BOOST_ARCH_SYS390
+inline constexpr size_t cacheline_bytes = 256;
+#elif BOOST_ARCH_PPC
+inline constexpr size_t cacheline_bytes = 128;
+#elif BOOST_ARCH_ARM && ( BOOST_OS_MACOS || BOOST_OS_IOS )
+// technically this is for apple's the M chips, but the A chip are probably similar
+inline constexpr size_t cacheline_bytes = 128;
 #else
-#    define BOOST_LOCKFREE_CACHELINE_BYTES 64
+inline constexpr size_t cacheline_bytes = 64;
 #endif
 
-#include <boost/predef.h>
+
+}}} // namespace boost::lockfree::detail
 
 #if BOOST_ARCH_X86_64 || ( ( BOOST_ARCH_ARM >= BOOST_VERSION_NUMBER( 8, 0, 0 ) ) && !BOOST_PLAT_ANDROID )
 #    define BOOST_LOCKFREE_PTR_COMPRESSION 1

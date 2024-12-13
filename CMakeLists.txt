@@ -11,7 +11,7 @@ option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" OFF)
 option(BOOST_LOCKFREE_USE_FILE_SET "Use FILE_SET for boost::lockfree" OFF)
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
 endif()
 
 add_library(boost_lockfree INTERFACE)
@@ -41,8 +41,8 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.23 AND BOOST_LOCKFREE_USE_FILE_SET)
     target_sources(boost_lockfree PUBLIC FILE_SET HEADERS FILES ${Headers} )
 endif()
 
-target_compile_features(boost_lockfree INTERFACE cxx_std_14)
-set_target_properties( boost_lockfree PROPERTIES CMAKE_CXX_STANDARD_REQUIRED 14)
+target_compile_features(boost_lockfree INTERFACE cxx_std_17)
+set_target_properties( boost_lockfree PROPERTIES CMAKE_CXX_STANDARD_REQUIRED 17)
 
 target_link_libraries(boost_lockfree
   INTERFACE
@@ -53,7 +53,6 @@ target_link_libraries(boost_lockfree
     Boost::core
     Boost::parameter
     Boost::predef
-    Boost::static_assert
     Boost::utility
 )
 

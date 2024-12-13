@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #include <boost/aligned_storage.hpp>
@@ -25,7 +26,6 @@
 #include <boost/core/span.hpp>
 #include <boost/parameter/optional.hpp>
 #include <boost/parameter/parameters.hpp>
-#include <boost/static_assert.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
@@ -43,7 +43,7 @@ class ringbuffer_base
 #ifndef BOOST_DOXYGEN_INVOKED
 protected:
     typedef std::size_t  size_t;
-    static constexpr int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( size_t );
+    static constexpr int padding_size = cacheline_bytes - sizeof( size_t );
     atomic< size_t >     write_index_;
     char                 padding1[ padding_size ]; /* force read_index and write_index to different cache lines */
     atomic< size_t >     read_index_;
@@ -585,7 +585,7 @@ struct make_ringbuffer
     typedef typename extract_allocator_t::type allocator;
 
     static constexpr bool signature_is_valid = runtime_sized ? true : !has_allocator;
-    BOOST_STATIC_ASSERT( signature_is_valid );
+    static_assert( signature_is_valid );
 
     typedef std::conditional_t< runtime_sized,
                                 runtime_sized_ringbuffer< T, allocator >,
@@ -644,7 +644,7 @@ public:
         requires( !runtime_sized )
 #endif
     {
-        // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
+        // Don't use static_assert() here since it will be evaluated when compiling
         // this function and this function may be compiled even when it isn't being used.
         BOOST_ASSERT( !runtime_sized );
     }
@@ -749,7 +749,6 @@ public:
         } );
     }
 
-#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
     /** Pops object from spsc_queue, returning a std::optional<>
      *
      * \returns `std::optional` with value if successful, `std::nullopt` if spsc_queue is empty.
@@ -783,7 +782,6 @@ public:
         else
             return std::nullopt;
     }
-#endif
 
     /** Pushes as many objects from the array t as there is space.
      *

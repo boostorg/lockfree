@@ -11,7 +11,6 @@
 #define BOOST_LOCKFREE_SPSC_VALUE_HPP_INCLUDED
 
 #include <boost/config.hpp>
-
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #    pragma once
 #endif
@@ -27,16 +26,7 @@
 
 #include <array>
 #include <cstdint>
-
-#ifndef BOOST_DOXYGEN_INVOKED
-
-#    ifdef BOOST_NO_CXX17_IF_CONSTEXPR
-#        define ifconstexpr
-#    else
-#        define ifconstexpr constexpr
-#    endif
-
-#endif
+#include <optional>
 
 namespace boost { namespace lockfree {
 
@@ -71,7 +61,7 @@ public:
      * */
     explicit spsc_value()
     {
-        if ifconstexpr ( allow_multiple_reads ) {
+        if constexpr ( allow_multiple_reads ) {
             // populate initial reader
             m_write_index = tagged_index {
                 1,
@@ -134,7 +124,6 @@ public:
      * */
     bool read( T& ret )
     {
-#ifndef BOOST_NO_CXX17_IF_CONSTEXPR
         bool read_index_updated = swap_read_buffer();
 
         if constexpr ( allow_multiple_reads ) {
@@ -146,12 +135,8 @@ public:
         }
 
         return true;
-#else
-        return read_helper( ret, std::integral_constant< bool, allow_multiple_reads > {} );
-#endif
     }
 
-#if !defined( BOOST_NO_CXX17_HDR_OPTIONAL ) || defined( BOOST_DOXYGEN_INVOKED )
     /** Reads content of the \ref boost::lockfree::spsc_value "spsc_value", returning an optional
      *
      * \pre     only one thread is allowed to write data to the \ref boost::lockfree::spsc_value "spsc_value"
@@ -169,7 +154,6 @@ public:
         else
             return std::nullopt;
     }
-#endif
 
     /** consumes value via a functor
      *
@@ -183,7 +167,6 @@ public:
     template < typename Functor >
     bool consume( Functor&& f )
     {
-#ifndef BOOST_NO_CXX17_IF_CONSTEXPR
         bool read_index_updated = swap_read_buffer();
 
         if constexpr ( allow_multiple_reads ) {
@@ -195,53 +178,12 @@ public:
         }
 
         return true;
-#else
-        return consume_helper( f, std::integral_constant< bool, allow_multiple_reads > {} );
-#endif
     }
 
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
     using allow_multiple_reads_true  = std::true_type;
     using allow_multiple_reads_false = std::false_type;
-
-#    ifdef BOOST_NO_CXX17_IF_CONSTEXPR
-    template < typename Functor >
-    bool consume_helper( Functor&& f, allow_multiple_reads_true = {} )
-    {
-        swap_read_buffer();
-        f( m_buffer[ m_read_index.index() ].value );
-        return true;
-    }
-
-    template < typename Functor >
-    bool consume_helper( Functor&& f, allow_multiple_reads_false = {} )
-    {
-        bool read_index_updated = swap_read_buffer();
-        if ( !read_index_updated )
-            return false;
-        f( std::move( m_buffer[ m_read_index.index() ].value ) );
-        return true;
-    }
-
-    template < typename TT >
-    bool read_helper( TT& ret, allow_multiple_reads_true = {} )
-    {
-        swap_read_buffer();
-        ret = m_buffer[ m_read_index.index() ].value;
-        return true;
-    }
-
-    template < typename TT >
-    bool read_helper( TT& ret, allow_multiple_reads_false = {} )
-    {
-        bool read_index_updated = swap_read_buffer();
-        if ( !read_index_updated )
-            return false;
-        ret = std::move( m_buffer[ m_read_index.index() ].value );
-        return true;
-    }
-#    endif
 
     void swap_write_buffer()
     {
@@ -258,7 +200,7 @@ private:
     {
         constexpr bool use_compare_exchange = false; // exchange is most likely faster
 
-        if ifconstexpr ( use_compare_exchange ) {
+        if constexpr ( use_compare_exchange ) {
             tagged_index new_avail_index = m_read_index;
 
             tagged_index current_avail_index_with_tag = tagged_index {
@@ -314,23 +256,19 @@ private:
         uint8_t byte;
     };
 
-    static constexpr size_t cacheline_bytes = BOOST_LOCKFREE_CACHELINE_BYTES;
-
-    struct alignas( cacheline_bytes ) cache_aligned_value
+    struct alignas( detail::cacheline_bytes ) cache_aligned_value
     {
         T value;
     };
 
     std::array< cache_aligned_value, 3 > m_buffer;
 
-    alignas( cacheline_bytes ) tagged_index m_write_index { 0 };
-    alignas( cacheline_bytes ) detail::atomic< tagged_index > m_available_index { 1 };
-    alignas( cacheline_bytes ) tagged_index m_read_index { 2 };
+    alignas( detail::cacheline_bytes ) tagged_index m_write_index { 0 };
+    alignas( detail::cacheline_bytes ) detail::atomic< tagged_index > m_available_index { 1 };
+    alignas( detail::cacheline_bytes ) tagged_index m_read_index { 2 };
 #endif
 };
 
-}} // namespace boost::lockfree
-
-#undef ifconstexpr
+}}     // namespace boost::lockfree
 
 #endif /* BOOST_LOCKFREE_SPSC_VALUE_HPP_INCLUDED */

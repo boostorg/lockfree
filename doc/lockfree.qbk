@@ -268,7 +268,7 @@ problem is the blocking emulation of lock-free atomics, which in the current imp
 
 [section Supported Platforms & Compilers]
 
-_lockfree_ requires a c++14 compliant compiler
+_lockfree_ requires a c++17 compliant compiler
 
 [endsect]
 
