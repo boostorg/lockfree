@@ -59,7 +59,7 @@ using extract_capacity_t = typename extract_capacity< bound_args >::type;
 template < typename bound_args, typename T >
 struct extract_allocator
 {
-    using default_allocator = boost::alignment::aligned_allocator< T, BOOST_LOCKFREE_CACHELINE_BYTES >;
+    using default_allocator = boost::alignment::aligned_allocator< T, cacheline_bytes >;
     using allocator_t       = extract_arg_or_default_t< bound_args, tag::allocator, default_allocator >;
 
     using has_no_allocator_t            = has_no_arg_t< bound_args, tag::allocator >;

@@ -268,7 +268,8 @@ problem is the blocking emulation of lock-free atomics, which in the current imp
 
 [section Supported Platforms & Compilers]
 
-_lockfree_ requires a c++14 compliant compiler
+_lockfree_ requires a c++14 compliant compiler. Users of MSVC are strongly recommended to use 2017 or higher. For 2015
+=_ENABLE_ATOMIC_ALIGNMENT_FIX= needs to be defined.
 
 [endsect]
 

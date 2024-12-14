@@ -314,7 +314,7 @@ private:
         uint8_t byte;
     };
 
-    static constexpr size_t cacheline_bytes = BOOST_LOCKFREE_CACHELINE_BYTES;
+    static constexpr size_t cacheline_bytes = detail::cacheline_bytes;
 
     struct alignas( cacheline_bytes ) cache_aligned_value
     {
