@@ -43,7 +43,7 @@ class ringbuffer_base
 #ifndef BOOST_DOXYGEN_INVOKED
 protected:
     typedef std::size_t  size_t;
-    static constexpr int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( size_t );
+    static constexpr int padding_size = cacheline_bytes - sizeof( size_t );
     atomic< size_t >     write_index_;
     char                 padding1[ padding_size ]; /* force read_index and write_index to different cache lines */
     atomic< size_t >     read_index_;
