@@ -72,44 +72,44 @@ jobs:
             install: clang-12
             compiler: clang++-12
             cxxstd: "14,17,20"
-            os: ubuntu-latest
+            os: ubuntu-20.04
             supported: true
           - toolset: clang
             install: clang-13
             compiler: clang++-13
             cxxstd: "14,17,20"
-            os: ubuntu-latest
+            os: ubuntu-22.04
             supported: true
           - toolset: clang
             install: clang-14
             compiler: clang++-14
             cxxstd: "14,17,20"
-            os: ubuntu-latest
+            os: ubuntu-22.04
             supported: true
           - toolset: clang
             install: clang-15
             compiler: clang++-15
             cxxstd: "14,17,20"
-            os: ubuntu-latest
+            os: ubuntu-22.04
             supported: true
-          # - toolset: clang
-          #   install: clang-16
-          #   compiler: clang++-16
-          #   cxxstd: "14,17,20"
-          #   os: ubuntu-latest
-          #   supported: true
-          # - toolset: clang
-          #   compiler: clang++-17
-          #   cxxstd: "14,17,20,2b"
-          #   os: ubuntu-latest
-          #   install: clang-17
-          #   supported: true
-          # - toolset: clang
-          #   compiler: clang++-18
-          #   cxxstd: "14,17,20,2b"
-          #   os: ubuntu-latest
-          #   install: clang-18
-          #   supported: true
+          - toolset: clang
+            install: clang-16
+            compiler: clang++-16
+            cxxstd: "14,17,20"
+            os: ubuntu-24.04
+            supported: true
+          - toolset: clang
+            compiler: clang++-17
+            cxxstd: "14,17,20,2b"
+            os: ubuntu-24.04
+            install: clang-17
+            supported: true
+          - toolset: clang
+            compiler: clang++-18
+            cxxstd: "14,17,20,2b"
+            os: ubuntu-24.04
+            install: clang-18
+            supported: true
 
           # macos
           - description: macos-13
