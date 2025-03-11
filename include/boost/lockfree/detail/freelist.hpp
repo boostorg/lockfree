@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cstring>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <stdexcept>
