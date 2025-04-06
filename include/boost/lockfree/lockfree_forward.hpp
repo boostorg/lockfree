@@ -59,7 +59,7 @@ class spsc_queue;
 template < typename T, typename... Options >
 struct spsc_value;
 
-}}     // namespace boost::lockfree
+}} // namespace boost::lockfree
 
 #endif // BOOST_DOXYGEN_INVOKED
 #endif // BOOST_LOCKFREE_FORWARD_HPP_INCLUDED
