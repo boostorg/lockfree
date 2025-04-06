@@ -61,8 +61,11 @@ foreach(Test ${Tests})
     )
     set_target_properties( boost_lockfree-${Test} PROPERTIES CXX_STANDARD_REQUIRED 14)
 
+    if (BOOST_LOCKFREE_TESTS_STRESSTEST)
+      target_compile_definitions(boost_lockfree-${Test} PRIVATE BOOST_LOCKFREE_STRESS_TEST)
+    endif()
+
     if (TARGET boost_lockfree-${Test})
         add_dependencies(boost_lockfree_all_tests boost_lockfree-${Test} )
     endif()
-
 endforeach()

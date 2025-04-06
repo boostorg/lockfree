@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.5...3.16)
 project(boost_lockfree VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
 option(BOOST_LOCKFREE_BUILD_TESTS "Build boost::lockfree tests" OFF)
+option(BOOST_LOCKFREE_TESTS_STRESSTEST "Build boost::lockfree with more excessive stress tests" OFF)
 option(BOOST_LOCKFREE_USE_FILE_SET "Use FILE_SET for boost::lockfree" OFF)
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
