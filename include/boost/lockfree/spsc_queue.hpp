@@ -823,7 +823,7 @@ public:
         return push( t.data(), t.size() );
     }
 
-    /** Pushes as many objects from the range [begin, end) as there is space .
+    /** Pushes as many objects from the range [begin, end) as there is space.
      *
      * \pre only one thread is allowed to push data to the spsc_queue
      * \return iterator to the first element, which has not been pushed
