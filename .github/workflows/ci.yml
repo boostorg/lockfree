@@ -10,6 +10,13 @@ on:
       - fix/**
       - pr/**
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   runner-selection:
     runs-on: ubuntu-latest
@@ -94,11 +101,6 @@ jobs:
             supported: true
 
           # macos
-          - description: macos-13
-            toolset: clang
-            cxxstd: "14,17,20"
-            os: macos-13
-            supported: true
           - description: macos-14
             toolset: clang
             cxxstd: "14,17,2a"
@@ -108,6 +110,11 @@ jobs:
             toolset: clang
             cxxstd: "14,17,20"
             os: macos-15
+            supported: true
+          - description: macos-26
+            toolset: clang
+            cxxstd: "17,20,23"
+            os: macos-26
             supported: true
 
 
@@ -137,7 +144,7 @@ jobs:
             sudo wget https://bootstrap.pypa.io/pip/$python_version/get-pip.py
             sudo python3 get-pip.py
             sudo /usr/local/bin/pip install cmake
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache ccache
         uses: actions/cache@v4
@@ -249,7 +256,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Boost
         shell: cmd
@@ -307,14 +314,14 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-13
           - os: macos-14
           - os: macos-15
+          - os: macos-26
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install packages
         if: matrix.install
@@ -355,14 +362,14 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-13
           - os: macos-14
           - os: macos-15
+          - os: macos-26
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install packages
         if: matrix.install
@@ -413,14 +420,14 @@ jobs:
         include:
           - os: ubuntu-22.04
           - os: ubuntu-24.04
-          - os: macos-13
           - os: macos-14
           - os: macos-15
+          - os: macos-26
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install packages
         if: matrix.install
@@ -473,7 +480,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Boost
         shell: cmd
@@ -522,7 +529,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Boost
         shell: cmd
@@ -589,7 +596,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Boost
         shell: cmd
