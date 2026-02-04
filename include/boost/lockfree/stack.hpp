@@ -642,7 +642,7 @@ public:
     template < typename Functor >
     bool consume_one( Functor&& f )
     {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos = tos.load( detail::memory_order_acquire );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -689,7 +689,7 @@ public:
     size_t consume_all_atomic( Functor&& f )
     {
         size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos       = tos.load( detail::memory_order_acquire );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -736,7 +736,7 @@ public:
     size_t consume_all_atomic_reversed( Functor&& f )
     {
         size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_consume );
+        tagged_node_handle old_tos       = tos.load( detail::memory_order_acquire );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
