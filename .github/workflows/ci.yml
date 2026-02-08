@@ -476,6 +476,8 @@ jobs:
         include:
           - os: windows-2019
           - os: windows-2022
+          - os: windows-2022
+            cmake_args: -T ClangCL
 
     runs-on: ${{matrix.os}}
 
@@ -507,7 +509,7 @@ jobs:
         run: |
           cd ../boost-root/libs/%LIBRARY%/test/cmake_subdir_test
           mkdir __build__ && cd __build__
-          cmake ..
+          cmake ${{ matrix.cmake_args }} ..
           cmake --build . --config Debug
           ctest --output-on-failure --no-tests=error -C Debug
 
@@ -525,6 +527,8 @@ jobs:
         include:
           - os: windows-2019
           - os: windows-2022
+          - os: windows-2022
+            cmake_args: -T ClangCL
 
     runs-on: ${{matrix.os}}
 
@@ -556,7 +560,7 @@ jobs:
         run: |
           cd ../boost-root
           mkdir __build__ && cd __build__
-          cmake -DBOOST_INCLUDE_LIBRARIES=%LIBRARY% -DCMAKE_INSTALL_PREFIX=C:/cmake-prefix ..
+          cmake -DBOOST_INCLUDE_LIBRARIES=%LIBRARY% -DCMAKE_INSTALL_PREFIX=C:/cmake-prefix ${{ matrix.cmake_args }} ..
 
       - name: Install (Debug)
         shell: cmd
@@ -592,6 +596,8 @@ jobs:
         include:
           - os: windows-2019
           - os: windows-2022
+          - os: windows-2022
+            cmake_args: -T ClangCL
 
     runs-on: ${{matrix.os}}
 
@@ -623,7 +629,7 @@ jobs:
         run: |
           cd ../boost-root
           mkdir __build__ && cd __build__
-          cmake -DBOOST_INCLUDE_LIBRARIES=%LIBRARY% -DBUILD_TESTING=ON ..
+          cmake -DBOOST_INCLUDE_LIBRARIES=%LIBRARY% -DBUILD_TESTING=ON ${{ matrix.cmake_args }} ..
 
       - name: Build tests (Debug)
         shell: cmd
