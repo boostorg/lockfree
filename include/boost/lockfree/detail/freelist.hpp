@@ -41,7 +41,7 @@ class alignas( cacheline_bytes ) freelist_stack : Alloc
 {
     struct freelist_node
     {
-        tagged_ptr< freelist_node > next;
+        atomic< tagged_ptr< freelist_node > > next;
     };
 
     typedef tagged_ptr< freelist_node > tagged_node_ptr;
@@ -134,7 +134,7 @@ public:
         while ( current ) {
             freelist_node* current_ptr = current.get_ptr();
             if ( current_ptr )
-                current = current_ptr->next;
+                current = current_ptr->next.load();
             Alloc::deallocate( (T*)current_ptr, 1 );
         }
     }
@@ -195,7 +195,7 @@ private:
                     return 0;
             }
 
-            freelist_node*  new_pool_ptr = old_pool->next.get_ptr();
+            freelist_node*  new_pool_ptr = old_pool->next.load( memory_order_acquire ).get_ptr();
             tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) ) {
@@ -219,7 +219,7 @@ private:
                 return 0;
         }
 
-        freelist_node*  new_pool_ptr = old_pool->next.get_ptr();
+        freelist_node*  new_pool_ptr = old_pool->next.load( memory_order_relaxed ).get_ptr();
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
 
         pool_.store( new_pool, memory_order_relaxed );
@@ -246,7 +246,7 @@ private:
 
         for ( ;; ) {
             tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_tag() );
-            new_pool->next.set_ptr( old_pool.get_ptr() );
+            new_pool->next.store( old_pool, memory_order_release );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
                 return;
@@ -260,7 +260,7 @@ private:
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_tag() );
-        new_pool->next.set_ptr( old_pool.get_ptr() );
+        new_pool->next.store( old_pool, memory_order_relaxed );
 
         pool_.store( new_pool, memory_order_relaxed );
     }
@@ -406,15 +406,17 @@ class fixed_size_freelist : NodeStorage
 {
     struct freelist_node
     {
-        tagged_index next;
+        atomic< tagged_index > next;
     };
 
     void initialize( void )
     {
         T* nodes = NodeStorage::nodes();
         for ( std::size_t i = 0; i != NodeStorage::node_count(); ++i ) {
-            tagged_index* next_index = reinterpret_cast< tagged_index* >( nodes + i );
-            next_index->set_index( null_handle() );
+            atomic< tagged_index >* next_atomic = reinterpret_cast< atomic< tagged_index >* >( nodes + i );
+            tagged_index            null_index;
+            null_index.set_index( null_handle() );
+            next_atomic->store( null_index, memory_order_relaxed );
 
 #ifdef BOOST_LOCKFREE_FREELIST_INIT_RUNS_DTOR
             destruct< false >( nodes + i );
@@ -568,10 +570,11 @@ private:
             if ( index == null_handle() )
                 return index;
 
-            T*            old_node   = NodeStorage::nodes() + index;
-            tagged_index* next_index = reinterpret_cast< tagged_index* >( old_node );
+            T*                      old_node    = NodeStorage::nodes() + index;
+            atomic< tagged_index >* next_atomic = reinterpret_cast< atomic< tagged_index >* >( old_node );
+            tagged_index            next_index  = next_atomic->load( memory_order_acquire );
 
-            tagged_index new_pool( next_index->get_index(), old_pool.get_next_tag() );
+            tagged_index new_pool( next_index.get_index(), old_pool.get_next_tag() );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
                 return old_pool.get_index();
@@ -586,10 +589,11 @@ private:
         if ( index == null_handle() )
             return index;
 
-        T*            old_node   = NodeStorage::nodes() + index;
-        tagged_index* next_index = reinterpret_cast< tagged_index* >( old_node );
+        T*                      old_node    = NodeStorage::nodes() + index;
+        atomic< tagged_index >* next_atomic = reinterpret_cast< atomic< tagged_index >* >( old_node );
+        tagged_index            next_index  = next_atomic->load( memory_order_relaxed );
 
-        tagged_index new_pool( next_index->get_index(), old_pool.get_next_tag() );
+        tagged_index new_pool( next_index.get_index(), old_pool.get_next_tag() );
 
         pool_.store( new_pool, memory_order_relaxed );
         return old_pool.get_index();
@@ -611,7 +615,9 @@ private:
 
         for ( ;; ) {
             tagged_index new_pool( index, old_pool.get_tag() );
-            new_pool_node->next.set_index( old_pool.get_index() );
+            tagged_index next_value;
+            next_value.set_index( old_pool.get_index() );
+            new_pool_node->next.store( next_value, memory_order_release );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
                 return;
@@ -624,7 +630,9 @@ private:
         tagged_index   old_pool      = pool_.load( memory_order_acquire );
 
         tagged_index new_pool( index, old_pool.get_tag() );
-        new_pool_node->next.set_index( old_pool.get_index() );
+        tagged_index next_value;
+        next_value.set_index( old_pool.get_index() );
+        new_pool_node->next.store( next_value, memory_order_relaxed );
 
         pool_.store( new_pool );
     }
