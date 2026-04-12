@@ -144,10 +144,10 @@ jobs:
             sudo wget https://bootstrap.pypa.io/pip/$python_version/get-pip.py
             sudo python3 get-pip.py
             sudo /usr/local/bin/pip install cmake
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: env.B2_USE_CCACHE
         with:
           path: ~/.ccache
@@ -160,6 +160,14 @@ jobs:
           for i in {1..3}; do sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break || sleep 2; done
           sudo apt-get update
           sudo apt-get install -y ${{matrix.install}}
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ccache
+
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache
 
       - name: Setup Boost
         shell: bash
@@ -178,7 +186,7 @@ jobs:
           echo GITHUB_BASE_REF: $GITHUB_BASE_REF
           echo GITHUB_REF: $GITHUB_REF
           REF=${GITHUB_BASE_REF:-$GITHUB_REF}
-          REF=${REFrefs/heads/}
+          REF=${REF#refs/heads/}
           echo REF: $REF
           BOOST_BRANCH=develop && [ "$REF" == "master" ] && BOOST_BRANCH=master || true
           echo BOOST_BRANCH: $BOOST_BRANCH
@@ -225,16 +233,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - toolset: msvc-14.0
-            cxxstd: "14,latest"
-            addrmd: 32,64
-            os: windows-2019
-            supported: false # requires _ENABLE_ATOMIC_ALIGNMENT_FIX
-          - toolset: msvc-14.2
-            cxxstd: "14,17,20,latest"
-            addrmd: 32,64
-            os: windows-2019
-            supported: true
           - toolset: msvc-14.3
             cxxstd: "14,17,20,latest"
             addrmd: 32,64
@@ -248,7 +246,7 @@ jobs:
           - toolset: gcc
             cxxstd: "14,17,2a"
             addrmd: 64
-            os: windows-2019
+            os: windows-2022
             supported: true
 
     needs: [runner-selection]
@@ -256,7 +254,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Boost
         shell: cmd
@@ -321,11 +319,19 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install packages
         if: matrix.install
         run: sudo apt-get -y install ${{matrix.install}}
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ccache
+
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache
 
       - name: Setup Boost
         run: |
@@ -351,7 +357,7 @@ jobs:
         run: |
           cd ../boost-root/libs/$LIBRARY/test/cmake_subdir_test
           mkdir __build__ && cd __build__
-          cmake ..
+          cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
           cmake --build .
           ctest --output-on-failure --no-tests=error
 
@@ -369,11 +375,19 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install packages
         if: matrix.install
         run: sudo apt-get -y install ${{matrix.install}}
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ccache
+
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache
 
       - name: Setup Boost
         run: |
@@ -399,7 +413,7 @@ jobs:
         run: |
           cd ../boost-root
           mkdir __build__ && cd __build__
-          cmake -DBOOST_INCLUDE_LIBRARIES=$LIBRARY -DCMAKE_INSTALL_PREFIX=~/.local ..
+          cmake -DBOOST_INCLUDE_LIBRARIES=$LIBRARY -DCMAKE_INSTALL_PREFIX=~/.local -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
 
       - name: Install
         run: |
@@ -409,7 +423,7 @@ jobs:
       - name: Use the installed library
         run: |
           cd ../boost-root/libs/$LIBRARY/test/cmake_install_test && mkdir __build__ && cd __build__
-          cmake -DCMAKE_INSTALL_PREFIX=~/.local ..
+          cmake -DCMAKE_INSTALL_PREFIX=~/.local -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
           cmake --build .
           ctest --output-on-failure --no-tests=error
 
@@ -427,11 +441,19 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install packages
         if: matrix.install
         run: sudo apt-get -y install ${{matrix.install}}
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ccache
+
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache
 
       - name: Setup Boost
         run: |
@@ -457,7 +479,7 @@ jobs:
         run: |
           cd ../boost-root
           mkdir __build__ && cd __build__
-          cmake -DBOOST_INCLUDE_LIBRARIES=$LIBRARY -DBUILD_TESTING=ON ..
+          cmake -DBOOST_INCLUDE_LIBRARIES=$LIBRARY -DBUILD_TESTING=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ..
 
       - name: Build tests
         run: |
@@ -474,7 +496,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2019
           - os: windows-2022
           - os: windows-2022
             cmake_args: -T ClangCL -A x64
@@ -484,7 +505,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Boost
         shell: cmd
@@ -528,7 +549,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2019
           - os: windows-2022
           - os: windows-2022
             cmake_args: -T ClangCL -A x64
@@ -538,7 +558,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Boost
         shell: cmd
@@ -600,7 +620,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2019
           - os: windows-2022
           - os: windows-2022
             cmake_args: -T ClangCL -A x64
@@ -610,7 +629,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Boost
         shell: cmd
