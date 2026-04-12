@@ -619,7 +619,7 @@ public:
         tagged_node_handle old_tos         = tos.load( detail::memory_order_relaxed );
         node*              old_tos_pointer = pool.get_pointer( old_tos );
 
-        if ( !pool.get_pointer( old_tos ) )
+        if ( !old_tos_pointer )
             return false;
 
         node*              new_tos_ptr = pool.get_pointer( old_tos_pointer->next );

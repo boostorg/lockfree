@@ -354,10 +354,10 @@ private:
 
     bool do_push_node( node* n )
     {
-        handle_type node_handle = pool.get_handle( n );
-
         if ( n == NULL )
             return false;
+
+        handle_type node_handle = pool.get_handle( n );
 
         for ( ;; ) {
             tagged_node_handle tail      = tail_.load( memory_order_acquire );
