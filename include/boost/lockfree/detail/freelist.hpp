@@ -86,15 +86,6 @@ public:
     }
 
     template < bool ThreadSafe, bool Bounded, typename ArgumentType >
-    T* construct( const ArgumentType& arg )
-    {
-        T* node = allocate< ThreadSafe, Bounded >();
-        if ( node )
-            new ( node ) T( arg );
-        return node;
-    }
-
-    template < bool ThreadSafe, bool Bounded, typename ArgumentType >
     T* construct( ArgumentType&& arg )
     {
         T* node = allocate< ThreadSafe, Bounded >();
@@ -108,7 +99,7 @@ public:
     {
         T* node = allocate< ThreadSafe, Bounded >();
         if ( node )
-            new ( node ) T( arg1, arg2 );
+            new ( node ) T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ) );
         return node;
     }
 
@@ -455,18 +446,6 @@ public:
     }
 
     template < bool ThreadSafe, bool Bounded, typename ArgumentType >
-    T* construct( const ArgumentType& arg )
-    {
-        index_t node_index = allocate< ThreadSafe >();
-        if ( node_index == null_handle() )
-            return NULL;
-
-        T* node = NodeStorage::nodes() + node_index;
-        new ( node ) T( arg );
-        return node;
-    }
-
-    template < bool ThreadSafe, bool Bounded, typename ArgumentType >
     T* construct( ArgumentType&& arg )
     {
         index_t node_index = allocate< ThreadSafe >();
@@ -479,14 +458,14 @@ public:
     }
 
     template < bool ThreadSafe, bool Bounded, typename ArgumentType1, typename ArgumentType2 >
-    T* construct( const ArgumentType1& arg1, const ArgumentType2& arg2 )
+    T* construct( ArgumentType1&& arg1, ArgumentType2&& arg2 )
     {
         index_t node_index = allocate< ThreadSafe >();
         if ( node_index == null_handle() )
             return NULL;
 
         T* node = NodeStorage::nodes() + node_index;
-        new ( node ) T( arg1, arg2 );
+        new ( node ) T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ) );
         return node;
     }
 
