@@ -86,16 +86,20 @@ private:
     {
         node( const T& val ) :
             v( val )
-        {}
+        {
+            next.store( handle_t(), detail::memory_order_relaxed );
+        }
 
         node( T&& val ) :
             v( std::forward< T >( val ) )
-        {}
+        {
+            next.store( handle_t(), detail::memory_order_relaxed );
+        }
 
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_t;
 
-        handle_t next;
-        T        v;
+        detail::atomic< handle_t > next;
+        T                          v;
     };
 
     typedef typename detail::extract_allocator< bound_args, node >::type node_allocator;
@@ -264,7 +268,7 @@ private:
         tagged_node_handle old_tos = tos.load( detail::memory_order_relaxed );
         for ( ;; ) {
             tagged_node_handle new_tos( pool.get_handle( new_top_node ), old_tos.get_tag() );
-            end_node->next = pool.get_handle( old_tos );
+            end_node->next.store( pool.get_handle( old_tos ), detail::memory_order_release );
 
             if ( tos.compare_exchange_weak( old_tos, new_tos ) )
                 break;
@@ -276,7 +280,7 @@ private:
         tagged_node_handle old_tos = tos.load( detail::memory_order_relaxed );
 
         tagged_node_handle new_tos( pool.get_handle( new_top_node ), old_tos.get_tag() );
-        end_node->next = pool.get_handle( old_tos );
+        end_node->next.store( pool.get_handle( old_tos ), detail::memory_order_relaxed );
 
         tos.store( new_tos, memory_order_relaxed );
     }
@@ -292,7 +296,7 @@ private:
         }
 
         node* new_top_node = end_node;
-        end_node->next     = NULL;
+        end_node->next.store( pool.null_handle(), detail::memory_order_relaxed );
 
         BOOST_TRY
         {
@@ -301,14 +305,14 @@ private:
                 node* newnode = pool.template construct< Threadsafe, Bounded >( *it );
                 if ( newnode == NULL )
                     break;
-                newnode->next = new_top_node;
-                new_top_node  = newnode;
+                newnode->next.store( pool.get_handle( new_top_node ), detail::memory_order_relaxed );
+                new_top_node = newnode;
             }
         }
         BOOST_CATCH( ... )
         {
             for ( node* current_node = new_top_node; current_node != NULL; ) {
-                node* next = current_node->next;
+                node* next = pool.get_pointer( current_node->next.load( detail::memory_order_relaxed ) );
                 pool.template destruct< Threadsafe >( current_node );
                 current_node = next;
             }
@@ -622,7 +626,7 @@ public:
         if ( !old_tos_pointer )
             return false;
 
-        node*              new_tos_ptr = pool.get_pointer( old_tos_pointer->next );
+        node*              new_tos_ptr = pool.get_pointer( old_tos_pointer->next.load( detail::memory_order_relaxed ) );
         tagged_node_handle new_tos( pool.get_handle( new_tos_ptr ), old_tos.get_next_tag() );
 
         tos.store( new_tos, memory_order_relaxed );
@@ -649,7 +653,8 @@ public:
             if ( !old_tos_pointer )
                 return false;
 
-            tagged_node_handle new_tos( old_tos_pointer->next, old_tos.get_next_tag() );
+            tagged_node_handle new_tos( old_tos_pointer->next.load( detail::memory_order_acquire ),
+                                        old_tos.get_next_tag() );
 
             if ( tos.compare_exchange_weak( old_tos, new_tos ) ) {
                 f( std::move( old_tos_pointer->v ) );
@@ -709,7 +714,7 @@ public:
             f( std::move( node_pointer->v ) );
             element_count += 1;
 
-            node* next_node = pool.get_pointer( node_pointer->next );
+            node* next_node = pool.get_pointer( node_pointer->next.load( detail::memory_order_acquire ) );
 
             if ( !next_node ) {
                 pool.template destruct< true >( nodes_to_consume );
@@ -755,10 +760,10 @@ public:
         tagged_node_handle nodes_in_reversed_order;
         for ( ;; ) {
             node* node_pointer = pool.get_pointer( nodes_to_consume );
-            node* next_node    = pool.get_pointer( node_pointer->next );
+            node* next_node    = pool.get_pointer( node_pointer->next.load( detail::memory_order_acquire ) );
 
-            node_pointer->next = pool.get_handle( last_node_pointer );
-            last_node_pointer  = node_pointer;
+            node_pointer->next.store( pool.get_handle( last_node_pointer ), detail::memory_order_relaxed );
+            last_node_pointer = node_pointer;
 
             if ( !next_node ) {
                 nodes_in_reversed_order = nodes_to_consume;
@@ -774,7 +779,7 @@ public:
             f( std::move( node_pointer->v ) );
             element_count += 1;
 
-            node* next_node = pool.get_pointer( node_pointer->next );
+            node* next_node = pool.get_pointer( node_pointer->next.load( detail::memory_order_relaxed ) );
 
             if ( !next_node ) {
                 pool.template destruct< true >( nodes_in_reversed_order );
