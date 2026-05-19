@@ -626,10 +626,7 @@ public:
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
     atomic< tagged_node_handle > head_;
-    static constexpr int         padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
-    char                         padding1[ padding_size ];
-    atomic< tagged_node_handle > tail_;
-    char                         padding2[ padding_size ];
+    alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > tail_;
 
     pool_t pool;
 #endif
