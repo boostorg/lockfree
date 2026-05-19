@@ -803,10 +803,7 @@ private:
 #ifndef BOOST_DOXYGEN_INVOKED
     detail::atomic< tagged_node_handle > tos;
 
-    static const int padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
-    char             padding[ padding_size ];
-
-    pool_t pool;
+    alignas( detail::cacheline_bytes ) pool_t pool;
 #endif
 };
 
