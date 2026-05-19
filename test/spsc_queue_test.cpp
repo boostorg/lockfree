@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE( spsc_queue_consume_all_test_compile_time )
     f.push( 3 );
 
     std::vector< int > consumed;
-    size_t count = f.consume_all( [&]( int i ) {
+    size_t             count = f.consume_all( [ & ]( int i ) {
         consumed.push_back( i );
     } );
 

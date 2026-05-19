@@ -434,7 +434,6 @@ private:
 
 #endif
 public:
-
     /** Pops object from queue.
      *
      * \post if pop operation is successful, object will be copied to ret.
