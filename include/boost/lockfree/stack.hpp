@@ -93,6 +93,8 @@ private:
             v( std::forward< T >( val ) )
         {}
 
+        node() = delete;
+
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_t;
 
         handle_t next;

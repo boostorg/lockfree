@@ -120,9 +120,7 @@ private:
             next( tagged_node_handle( null_handle, next_tag ) )
         {}
 
-        template < typename TagT >
-        node( TagT /*next_tag*/ )
-        {}
+        node() = delete;
 
         alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > next;
         T data;
