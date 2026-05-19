@@ -521,6 +521,14 @@ public:
     }
 
     template < bool ThreadSafe >
+    void destruct( index_t index )
+    {
+        T* n = NodeStorage::nodes() + index;
+        n->~T();
+        deallocate< ThreadSafe >( index );
+    }
+
+    template < bool ThreadSafe >
     void destruct( T* n )
     {
         n->~T();
@@ -670,6 +678,81 @@ struct select_freelist
 
 template < typename T, typename Alloc, bool IsCompileTimeSized, bool IsFixedSize, std::size_t Capacity >
 using select_freelist_t = typename select_freelist< T, Alloc, IsCompileTimeSized, IsFixedSize, Capacity >::type;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template < typename T, typename Alloc = std::allocator< T > >
+class alignas( cacheline_bytes ) direct_allocator : Alloc
+{
+public:
+    typedef T* index_t;
+    typedef T* tagged_node_handle;
+
+    template < typename Allocator >
+    direct_allocator( Allocator const& alloc, std::size_t = 0 ) :
+        Alloc( alloc )
+    {}
+
+    template < bool ThreadSafe >
+    void reserve( std::size_t )
+    {}
+
+    template < bool ThreadSafe, bool Bounded >
+    T* construct( void )
+    {
+        T* node = Alloc::allocate( 1 );
+        if ( node )
+            new ( node ) T();
+        return node;
+    }
+
+    template < bool ThreadSafe, bool Bounded, typename ArgumentType >
+    T* construct( ArgumentType&& arg )
+    {
+        T* node = Alloc::allocate( 1 );
+        if ( node )
+            new ( node ) T( std::forward< ArgumentType >( arg ) );
+        return node;
+    }
+
+    template < bool ThreadSafe, bool Bounded, typename ArgumentType1, typename ArgumentType2 >
+    T* construct( ArgumentType1&& arg1, ArgumentType2&& arg2 )
+    {
+        T* node = Alloc::allocate( 1 );
+        if ( node )
+            new ( node ) T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ) );
+        return node;
+    }
+
+    template < bool ThreadSafe >
+    void destruct( tagged_node_handle node )
+    {
+        if ( node ) {
+            node->~T();
+            Alloc::deallocate( node, 1 );
+        }
+    }
+
+    bool is_lock_free( void ) const
+    {
+        return false;
+    }
+
+    T* get_handle( T* pointer ) const
+    {
+        return pointer;
+    }
+
+    T* get_pointer( T* tptr ) const
+    {
+        return tptr;
+    }
+
+    T* null_handle( void ) const
+    {
+        return nullptr;
+    }
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 
