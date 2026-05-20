@@ -353,6 +353,9 @@ jobs:
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" $LIBRARY
 
+          # HACK: boost.functional seems to be missing?
+          git submodule update --init libs/functional
+
       - name: Use library with add_subdirectory
         run: |
           cd ../boost-root/libs/$LIBRARY/test/cmake_subdir_test
@@ -408,6 +411,8 @@ jobs:
           cp -r $GITHUB_WORKSPACE/* libs/$LIBRARY
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" $LIBRARY
+
+          git submodule update --init libs/functional
 
       - name: Configure
         run: |
@@ -475,6 +480,8 @@ jobs:
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" $LIBRARY
 
+          git submodule update --init libs/functional
+
       - name: Configure
         run: |
           cd ../boost-root
@@ -526,6 +533,8 @@ jobs:
           xcopy /s /e /q %GITHUB_WORKSPACE% libs\%LIBRARY%\
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" %LIBRARY%
+
+          git submodule update --init libs/functional
 
       - name: Use library with add_subdirectory (Debug)
         shell: cmd
@@ -579,6 +588,8 @@ jobs:
           xcopy /s /e /q %GITHUB_WORKSPACE% libs\%LIBRARY%\
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" %LIBRARY%
+
+          git submodule update --init libs/functional
 
       - name: Configure
         shell: cmd
@@ -650,6 +661,8 @@ jobs:
           xcopy /s /e /q %GITHUB_WORKSPACE% libs\%LIBRARY%\
           git submodule update --init tools/boostdep
           python tools/boostdep/depinst/depinst.py --git_args "--jobs 3" %LIBRARY%
+
+          git submodule update --init libs/functional
 
       - name: Configure
         shell: cmd

@@ -10,25 +10,17 @@ add_subdirectory(../.. boostorg/lockfree)
 
 set(deps
     align
-    array
     assert
     atomic
     config
     core
-    integer
-    iterator
-    mpl
     parameter
     predef
-    tuple
-    type_traits
     utility
 
     # transitive
     bind
-    concept_check
     container_hash
-    conversion
     describe
     detail
     function
@@ -36,13 +28,14 @@ set(deps
     functional
     fusion
     io
-    move
     mp11
+    mpl
     optional
     preprocessor
-    smart_ptr
-    typeof
     throw_exception
+    tuple
+    type_traits
+    typeof
     winapi
 )
 
