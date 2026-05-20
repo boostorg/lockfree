@@ -41,7 +41,7 @@ class alignas( cacheline_bytes ) freelist_stack : Alloc
 {
     struct BOOST_MAY_ALIAS freelist_node
     {
-        tagged_ptr< freelist_node > next;
+        atomic< tagged_ptr< freelist_node > > next;
     };
 
     typedef tagged_ptr< freelist_node > tagged_node_ptr;
@@ -125,7 +125,7 @@ public:
         while ( current ) {
             freelist_node* current_ptr = current.get_ptr();
             if ( current_ptr )
-                current = current_ptr->next;
+                current = current_ptr->next.load( memory_order_relaxed );
             Alloc::deallocate( (T*)current_ptr, 1 );
         }
     }
@@ -186,7 +186,7 @@ private:
                     return 0;
             }
 
-            freelist_node*  new_pool_ptr = old_pool->next.get_ptr();
+            freelist_node*  new_pool_ptr = old_pool->next.load( memory_order_relaxed ).get_ptr();
             tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) ) {
@@ -210,7 +210,7 @@ private:
                 return 0;
         }
 
-        freelist_node*  new_pool_ptr = old_pool->next.get_ptr();
+        freelist_node*  new_pool_ptr = old_pool->next.load( memory_order_relaxed ).get_ptr();
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
 
         pool_.store( new_pool, memory_order_relaxed );
@@ -237,7 +237,9 @@ private:
 
         for ( ;; ) {
             tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
-            new_pool->next.set_ptr( old_pool.get_ptr() );
+            tagged_node_ptr old_next = new_pool_ptr->next.load( memory_order_relaxed );
+            old_next.set_ptr( old_pool.get_ptr() );
+            new_pool_ptr->next.store( old_next, memory_order_relaxed );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
                 return;
@@ -251,7 +253,9 @@ private:
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
         tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
-        new_pool->next.set_ptr( old_pool.get_ptr() );
+        tagged_node_ptr old_next = new_pool_ptr->next.load( memory_order_relaxed );
+        old_next.set_ptr( old_pool.get_ptr() );
+        new_pool_ptr->next.store( old_next, memory_order_relaxed );
 
         pool_.store( new_pool, memory_order_relaxed );
     }
