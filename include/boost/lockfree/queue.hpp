@@ -104,7 +104,7 @@ private:
     static constexpr bool node_based         = !( has_capacity || fixed_sized );
     static constexpr bool compile_time_sized = has_capacity;
 
-    struct alignas( detail::cacheline_bytes ) node
+    struct BOOST_MAY_ALIAS node
     {
         typedef typename detail::select_tagged_handle< node, node_based >::tagged_handle_type tagged_node_handle;
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type        handle_type;
@@ -125,8 +125,8 @@ private:
         node( void )
         {}
 
-        atomic< tagged_node_handle > next;
-        T                            data;
+        alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > next;
+        T data;
     };
 
     typedef detail::extract_allocator_t< bound_args, node >                                              node_allocator;
