@@ -177,8 +177,6 @@ public:
         requires( has_capacity )
 #endif
         :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
         pool( node_allocator(), capacity )
     {
         // Don't use BOOST_STATIC_ASSERT() here since it will be evaluated when compiling
@@ -191,10 +189,13 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( has_capacity )
+#else
     template < typename U, typename Enabler = std::enable_if< has_capacity > >
+#endif
     explicit queue( typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, capacity )
     {
         initialize();
@@ -204,10 +205,14 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit queue( allocator const& alloc )
+        requires( has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< has_capacity > >
     explicit queue( allocator const& alloc ) :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
+#endif
         pool( alloc, capacity )
     {
         initialize();
@@ -219,10 +224,14 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit queue( size_type n )
+        requires( !has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     explicit queue( size_type n ) :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
+#endif
         pool( node_allocator(), n + 1 )
     {
         initialize();
@@ -234,10 +243,13 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( !has_capacity )
+#else
     template < typename U, typename Enabler = std::enable_if< !has_capacity > >
+#endif
     queue( size_type n, typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
         pool( alloc, n + 1 )
     {
         initialize();
@@ -249,10 +261,14 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    queue( size_type n, allocator const& alloc )
+        requires( !has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     queue( size_type n, allocator const& alloc ) :
-        head_( tagged_node_handle( 0, 0 ) ),
-        tail_( tagged_node_handle( 0, 0 ) ),
+#endif
         pool( alloc, n + 1 )
     {
         initialize();
@@ -625,8 +641,12 @@ public:
 
 private:
 #ifndef BOOST_DOXYGEN_INVOKED
-    atomic< tagged_node_handle > head_;
-    alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > tail_;
+    atomic< tagged_node_handle > head_ {
+        tagged_node_handle( 0, 0 ),
+    };
+    alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > tail_ {
+        tagged_node_handle( 0, 0 ),
+    };
 
     pool_t pool;
 #endif

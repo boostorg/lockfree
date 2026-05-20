@@ -43,13 +43,11 @@ class ringbuffer_base
 #ifndef BOOST_DOXYGEN_INVOKED
 protected:
     typedef std::size_t size_t;
-    alignas( cacheline_bytes ) atomic< size_t > write_index_;
-    alignas( cacheline_bytes ) atomic< size_t > read_index_;
+    alignas( cacheline_bytes ) atomic< size_t > write_index_ {};
+    alignas( cacheline_bytes ) atomic< size_t > read_index_ {};
 
 protected:
-    ringbuffer_base( void ) :
-        write_index_( 0 ),
-        read_index_( 0 )
+    ringbuffer_base( void )
     {}
 
     static size_t next_index( size_t arg, size_t max_size )
@@ -653,7 +651,12 @@ public:
      *
      *  \note This is just for API compatibility: an allocator isn't actually needed
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( !runtime_sized )
+#else
     template < typename U, typename Enabler = std::enable_if< !runtime_sized > >
+#endif
     explicit spsc_queue( typename boost::allocator_rebind< allocator, U >::type const& )
     {}
 
@@ -663,16 +666,27 @@ public:
      *
      *  \note This is just for API compatibility: an allocator isn't actually needed
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit spsc_queue( allocator const& )
+        requires( !runtime_sized )
+#else
     template < typename Enabler = std::enable_if< !runtime_sized > >
     explicit spsc_queue( allocator const& )
+#endif
     {}
 
     /** Constructs a spsc_queue for element_count elements
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit spsc_queue( size_type element_count )
+        requires( runtime_sized )
+#else
     template < typename Enabler = std::enable_if< runtime_sized > >
-    explicit spsc_queue( size_type element_count ) :
+    explicit spsc_queue( size_type element_count )
+#endif
+        :
         base_type( element_count )
     {}
 
@@ -680,7 +694,12 @@ public:
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( runtime_sized )
+#else
     template < typename U, typename Enabler = std::enable_if< runtime_sized > >
+#endif
     spsc_queue( size_type element_count, typename boost::allocator_rebind< allocator, U >::type const& alloc ) :
         base_type( alloc, element_count )
     {}
@@ -689,8 +708,14 @@ public:
      *
      *  \pre spsc_queue must be configured to be sized at run-time
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    spsc_queue( size_type element_count, allocator_arg const& alloc )
+        requires( runtime_sized )
+#else
     template < typename Enabler = std::enable_if< runtime_sized > >
-    spsc_queue( size_type element_count, allocator_arg const& alloc ) :
+    spsc_queue( size_type element_count, allocator_arg const& alloc )
+#endif
+        :
         base_type( alloc, element_count )
     {}
 
@@ -739,7 +764,12 @@ public:
      *
      * \note Thread-safe and wait-free
      */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( std::is_convertible_v< T, U > )
+#else
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
+#endif
     bool pop( U& ret )
     {
         return consume_one( [ & ]( T&& t ) {
@@ -866,8 +896,16 @@ public:
      *
      * \note Thread-safe and wait-free
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
     template < typename OutputIterator >
-    typename std::enable_if< !std::is_convertible< T, OutputIterator >::value, size_type >::type pop( OutputIterator it )
+        requires( !std::is_convertible_v< T, OutputIterator > )
+    size_type
+#else
+    template < typename OutputIterator,
+               typename Enabler = std::enable_if< !std::is_convertible< T, OutputIterator >::value > >
+    typename std::enable_if< !std::is_convertible< T, OutputIterator >::value, size_type >::type
+#endif
+    pop( OutputIterator it )
     {
         return base_type::pop_to_output_iterator( it );
     }

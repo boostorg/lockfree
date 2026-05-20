@@ -155,7 +155,12 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( has_capacity )
+#else
     template < typename U, typename Enabler = std::enable_if< has_capacity > >
+#endif
     explicit stack( typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         pool( alloc, capacity )
     {
@@ -166,8 +171,14 @@ public:
      *
      *  \pre Must specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit stack( allocator const& alloc )
+        requires( has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< has_capacity > >
     explicit stack( allocator const& alloc ) :
+#endif
         pool( alloc, capacity )
     {
         initialize();
@@ -179,8 +190,14 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    explicit stack( size_type n )
+        requires( !has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     explicit stack( size_type n ) :
+#endif
         pool( node_allocator(), n )
     {
         initialize();
@@ -198,7 +215,12 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( !has_capacity )
+#else
     template < typename U, typename Enabler = std::enable_if< !has_capacity > >
+#endif
     stack( size_type n, typename boost::allocator_rebind< node_allocator, U >::type const& alloc ) :
         pool( alloc, n )
     {
@@ -211,8 +233,14 @@ public:
      *
      *  \pre Must \b not specify a capacity<> argument
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    stack( size_type n, node_allocator const& alloc )
+        requires( !has_capacity )
+        :
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     stack( size_type n, node_allocator const& alloc ) :
+#endif
         pool( alloc, n )
     {
         initialize();
@@ -224,8 +252,13 @@ public:
      *  \note thread-safe, may block if memory allocator blocks
      *
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    void reserve( size_type n )
+        requires( !has_capacity )
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     void reserve( size_type n )
+#endif
     {
         pool.template reserve< true >( n );
     }
@@ -236,8 +269,13 @@ public:
      *  \note not thread-safe, may block if memory allocator blocks
      *
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    void reserve_unsafe( size_type n )
+        requires( !has_capacity )
+#else
     template < typename Enabler = std::enable_if< !has_capacity > >
     void reserve_unsafe( size_type n )
+#endif
     {
         pool.template reserve< false >( n );
     }
@@ -547,7 +585,12 @@ public:
      * \note Thread-safe and non-blocking
      *
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( std::is_convertible_v< T, U > )
+#else
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
+#endif
     bool pop( U& ret )
     {
         return consume_one( [ & ]( T&& arg ) {
@@ -613,7 +656,12 @@ public:
      * \note Not thread-safe, but non-blocking
      *
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
+    template < typename U >
+        requires( std::is_convertible_v< T, U > )
+#else
     template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
+#endif
     bool unsynchronized_pop( U& ret )
     {
         tagged_node_handle old_tos         = tos.load( detail::memory_order_relaxed );
