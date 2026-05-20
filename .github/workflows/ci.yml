@@ -151,8 +151,11 @@ jobs:
         if: env.B2_USE_CCACHE
         with:
           path: ~/.ccache
-          key: ${{matrix.os}}-${{matrix.container}}-${{matrix.compiler}}-${{github.sha}}
-          restore-keys: ${{matrix.os}}-${{matrix.container}}-${{matrix.compiler}}-
+          key: ccache-${{matrix.os}}-${{matrix.compiler}}-${{ hashFiles('**/*.cpp', '**/*.hpp', '**/*.c', '**/*.h') }}
+          restore-keys: |
+            ccache-${{matrix.os}}-${{matrix.compiler}}-
+            ccache-${{matrix.os}}-
+            ccache-
 
       - name: Install packages
         if: matrix.install
