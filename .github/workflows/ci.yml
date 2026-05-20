@@ -242,7 +242,7 @@ jobs:
             os: windows-2022
             supported: true
           - toolset: clang-win
-            cxxstd: "14,17,20,latest"
+            cxxstd: "latest,20,17,14"
             addrmd: 32,64
             os: windows-2022
             supported: true
