@@ -82,7 +82,7 @@ private:
     static const bool   node_based         = !( has_capacity || fixed_sized );
     static const bool   compile_time_sized = has_capacity;
 
-    struct node
+    struct BOOST_MAY_ALIAS node
     {
         node( const T& val ) :
             v( val )
