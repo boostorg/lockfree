@@ -236,7 +236,7 @@ private:
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
         for ( ;; ) {
-            tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_tag() );
+            tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
             new_pool->next.set_ptr( old_pool.get_ptr() );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
@@ -250,7 +250,7 @@ private:
         tagged_node_ptr old_pool     = pool_.load( memory_order_relaxed );
         freelist_node*  new_pool_ptr = reinterpret_cast< freelist_node* >( node );
 
-        tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_tag() );
+        tagged_node_ptr new_pool( new_pool_ptr, old_pool.get_next_tag() );
         new_pool->next.set_ptr( old_pool.get_ptr() );
 
         pool_.store( new_pool, memory_order_relaxed );
@@ -589,7 +589,7 @@ private:
         tagged_index   old_pool      = pool_.load( memory_order_acquire );
 
         for ( ;; ) {
-            tagged_index new_pool( index, old_pool.get_tag() );
+            tagged_index new_pool( index, old_pool.get_next_tag() );
             new_pool_node->next.set_index( old_pool.get_index() );
 
             if ( pool_.compare_exchange_weak( old_pool, new_pool ) )
@@ -602,7 +602,7 @@ private:
         freelist_node* new_pool_node = reinterpret_cast< freelist_node* >( NodeStorage::nodes() + index );
         tagged_index   old_pool      = pool_.load( memory_order_acquire );
 
-        tagged_index new_pool( index, old_pool.get_tag() );
+        tagged_index new_pool( index, old_pool.get_next_tag() );
         new_pool_node->next.set_index( old_pool.get_index() );
 
         pool_.store( new_pool );
