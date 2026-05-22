@@ -470,7 +470,12 @@ public:
      *
      * \note Thread-safe and non-blocking. Might modify return argument even if operation fails.
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
     template < typename U >
+        requires( std::is_constructible_v< U, T && > )
+#else
+    template < typename U, typename Enabler = std::enable_if_t< std::is_constructible< U, T&& >::value > >
+#endif
     bool pop( U& ret )
     {
         for ( ;; ) {
@@ -569,7 +574,12 @@ public:
      * \note Not thread-safe, but non-blocking. Might modify return argument even if operation fails.
      *
      * */
+#if !defined( BOOST_NO_CXX20_HDR_CONCEPTS )
     template < typename U >
+        requires( std::is_constructible_v< U, T && > )
+#else
+    template < typename U, typename Enabler = std::enable_if_t< std::is_constructible< U, T&& >::value > >
+#endif
     bool unsynchronized_pop( U& ret )
     {
         for ( ;; ) {

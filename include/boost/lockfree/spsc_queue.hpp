@@ -767,7 +767,7 @@ public:
     template < typename U >
         requires( std::is_convertible_v< T, U > )
 #else
-    template < typename U, typename Enabler = std::enable_if< std::is_convertible< T, U >::value > >
+    template < typename U, typename Enabler = std::enable_if_t< std::is_convertible< T, U >::value > >
 #endif
     bool pop( U& ret )
     {
