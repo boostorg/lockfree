@@ -22,7 +22,6 @@
 #include <boost/static_assert.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
-#include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>

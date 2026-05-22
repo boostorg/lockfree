@@ -28,7 +28,6 @@
 #include <boost/static_assert.hpp>
 
 #include <boost/lockfree/detail/atomic.hpp>
-#include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/prefix.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
