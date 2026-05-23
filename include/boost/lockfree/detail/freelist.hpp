@@ -80,8 +80,11 @@ public:
     T* construct( void )
     {
         T* node = allocate< ThreadSafe, Bounded >();
-        if ( node )
-            new ( node ) T();
+        if ( node ) {
+            freelist_node*  fn  = reinterpret_cast< freelist_node* >( node );
+            tagged_node_ptr old = fn->next;
+            new ( node ) T( old.get_next_tag() );
+        }
         return node;
     }
 
@@ -89,8 +92,11 @@ public:
     T* construct( ArgumentType&& arg )
     {
         T* node = allocate< ThreadSafe, Bounded >();
-        if ( node )
-            new ( node ) T( std::forward< ArgumentType >( arg ) );
+        if ( node ) {
+            freelist_node*  fn  = reinterpret_cast< freelist_node* >( node );
+            tagged_node_ptr old = fn->next;
+            new ( node ) T( std::forward< ArgumentType >( arg ), old.get_next_tag() );
+        }
         return node;
     }
 
@@ -98,8 +104,12 @@ public:
     T* construct( ArgumentType1&& arg1, ArgumentType2&& arg2 )
     {
         T* node = allocate< ThreadSafe, Bounded >();
-        if ( node )
-            new ( node ) T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ) );
+        if ( node ) {
+            freelist_node*  fn  = reinterpret_cast< freelist_node* >( node );
+            tagged_node_ptr old = fn->next;
+            new ( node )
+                T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ), old.get_next_tag() );
+        }
         return node;
     }
 
@@ -440,8 +450,9 @@ public:
         if ( node_index == null_handle() )
             return NULL;
 
-        T* node = NodeStorage::nodes() + node_index;
-        new ( node ) T();
+        T*             node = NodeStorage::nodes() + node_index;
+        freelist_node* fn   = reinterpret_cast< freelist_node* >( node );
+        new ( node ) T( fn->next.get_next_tag() );
         return node;
     }
 
@@ -452,8 +463,9 @@ public:
         if ( node_index == null_handle() )
             return NULL;
 
-        T* node = NodeStorage::nodes() + node_index;
-        new ( node ) T( std::forward< ArgumentType >( arg ) );
+        T*             node = NodeStorage::nodes() + node_index;
+        freelist_node* fn   = reinterpret_cast< freelist_node* >( node );
+        new ( node ) T( std::forward< ArgumentType >( arg ), fn->next.get_next_tag() );
         return node;
     }
 
@@ -464,8 +476,10 @@ public:
         if ( node_index == null_handle() )
             return NULL;
 
-        T* node = NodeStorage::nodes() + node_index;
-        new ( node ) T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ) );
+        T*             node = NodeStorage::nodes() + node_index;
+        freelist_node* fn   = reinterpret_cast< freelist_node* >( node );
+        new ( node )
+            T( std::forward< ArgumentType1 >( arg1 ), std::forward< ArgumentType2 >( arg2 ), fn->next.get_next_tag() );
         return node;
     }
 
