@@ -83,11 +83,13 @@ private:
 
     struct BOOST_MAY_ALIAS node
     {
-        node( const T& val ) :
+        template < typename TagT >
+        node( const T& val, TagT /*next_tag*/ ) :
             v( val )
         {}
 
-        node( T&& val ) :
+        template < typename TagT >
+        node( T&& val, TagT /*next_tag*/ ) :
             v( std::forward< T >( val ) )
         {}
 

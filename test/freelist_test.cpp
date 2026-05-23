@@ -36,6 +36,14 @@ struct dummy
         allocated = 1;
     }
 
+    template < typename TagT >
+    dummy( TagT /*tag*/ )
+    {
+        if ( test_running.load( boost::lockfree::detail::memory_order_relaxed ) )
+            assert( allocated == 0 );
+        allocated = 1;
+    }
+
     ~dummy( void )
     {
         if ( test_running.load( boost::lockfree::detail::memory_order_relaxed ) )

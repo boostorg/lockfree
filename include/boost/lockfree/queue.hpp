@@ -109,20 +109,19 @@ private:
         typedef typename detail::select_tagged_handle< node, node_based >::tagged_handle_type tagged_node_handle;
         typedef typename detail::select_tagged_handle< node, node_based >::handle_type        handle_type;
 
-        node( T const& v, handle_type null_handle ) :
+        template < typename TagT >
+        node( T const& v, handle_type null_handle, TagT next_tag ) :
+            next( tagged_node_handle( null_handle, next_tag ) ),
             data( v )
-        {
-            /* increment tag to avoid ABA problem */
-            tagged_node_handle old_next = next.load( memory_order_relaxed );
-            tagged_node_handle new_next( null_handle, old_next.get_next_tag() );
-            next.store( new_next, memory_order_release );
-        }
-
-        node( handle_type null_handle ) :
-            next( tagged_node_handle( null_handle, 0 ) )
         {}
 
-        node( void )
+        template < typename TagT >
+        node( handle_type null_handle, TagT next_tag ) :
+            next( tagged_node_handle( null_handle, next_tag ) )
+        {}
+
+        template < typename TagT >
+        node( TagT /*next_tag*/ )
         {}
 
         alignas( detail::cacheline_bytes ) atomic< tagged_node_handle > next;
