@@ -146,6 +146,14 @@ jobs:
             sudo /usr/local/bin/pip install cmake
       - uses: actions/checkout@v6
 
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y ccache && mkdir -p ~/.ccache
+
+      - name: Install ccache (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache && mkdir -p ~/.ccache
+
       - name: Cache ccache
         uses: actions/cache@v5
         if: env.B2_USE_CCACHE
@@ -163,14 +171,6 @@ jobs:
           for i in {1..3}; do sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break || sleep 2; done
           sudo apt-get update
           sudo apt-get install -y ${{matrix.install}}
-
-      - name: Install ccache (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get install -y ccache
-
-      - name: Install ccache (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ccache
 
       - name: Setup Boost
         shell: bash
