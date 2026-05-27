@@ -25,7 +25,6 @@ set(deps
     detail
     function
     function_types
-    functional
     fusion
     io
     mp11
