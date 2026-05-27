@@ -37,11 +37,13 @@ namespace boost { namespace lockfree { namespace detail {
 //----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, typename Alloc = std::allocator< T > >
-class alignas( cacheline_bytes ) freelist_stack : Alloc
+class alignas( cacheline_bytes ) freelist_stack : boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes >
 {
+    typedef boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes > allocator_type;
+
     struct BOOST_MAY_ALIAS freelist_node
     {
-        tagged_ptr< freelist_node > next;
+        alignas( T ) tagged_ptr< freelist_node > next;
     };
 
     typedef tagged_ptr< freelist_node > tagged_node_ptr;
@@ -52,11 +54,11 @@ public:
 
     template < typename Allocator >
     freelist_stack( Allocator const& alloc, std::size_t n = 0 ) :
-        Alloc( alloc ),
+        allocator_type( alloc ),
         pool_( tagged_node_ptr( NULL ) )
     {
         for ( std::size_t i = 0; i != n; ++i ) {
-            T* node = Alloc::allocate( 1 );
+            T* node = allocator_type::allocate( 1 );
             std::memset( (void*)node, 0, sizeof( T ) );
 #ifdef BOOST_LOCKFREE_FREELIST_INIT_RUNS_DTOR
             destruct< false >( node );
@@ -70,7 +72,7 @@ public:
     void reserve( std::size_t count )
     {
         for ( std::size_t i = 0; i != count; ++i ) {
-            T* node = Alloc::allocate( 1 );
+            T* node = allocator_type::allocate( 1 );
             std::memset( (void*)node, 0, sizeof( T ) );
             deallocate< ThreadSafe >( node );
         }
@@ -136,7 +138,7 @@ public:
             freelist_node* current_ptr = current.get_ptr();
             if ( current_ptr )
                 current = current_ptr->next;
-            Alloc::deallocate( (T*)current_ptr, 1 );
+            allocator_type::deallocate( (T*)current_ptr, 1 );
         }
     }
 
@@ -213,7 +215,7 @@ private:
 
         if ( !old_pool.get_ptr() ) {
             if ( !Bounded ) {
-                T* ptr = Alloc::allocate( 1 );
+                T* ptr = allocator_type::allocate( 1 );
                 std::memset( (void*)ptr, 0, sizeof( T ) );
                 return ptr;
             } else
@@ -407,7 +409,7 @@ class fixed_size_freelist : NodeStorage
 {
     struct BOOST_MAY_ALIAS freelist_node
     {
-        tagged_index next;
+        alignas( T ) tagged_index next;
     };
 
     void initialize( void )
