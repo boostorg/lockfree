@@ -28,16 +28,17 @@ rule test_all
       all_rules += [ run $(fileb)
       : # additional args
       : # test-files
-      : # requirements
-        <toolset>acc:<linkflags>-lrt
-        <toolset>acc-pa_risc:<linkflags>-lrt
-        <target-os>windows,<toolset>gcc:<linkflags>"-lole32 -loleaut32 -lpsapi -ladvapi32"
-        <host-os>hpux,<toolset>gcc:<linkflags>"-Wl,+as,mpas"
-        <host-os>linux,<toolset>clang:<linkflags>"-latomic"
-        <threading>multi
-        <link>static
-        <define>BOOST_TEST_NO_OLD_TOOLS
-        <target-os>cygwin:<cxxflags>"-D_XOPEN_SOURCE=600"
+       : # requirements
+         <toolset>acc:<linkflags>-lrt
+         <toolset>acc-pa_risc:<linkflags>-lrt
+         <target-os>windows,<toolset>gcc:<linkflags>"-lole32 -loleaut32 -lpsapi -ladvapi32"
+         <host-os>hpux,<toolset>gcc:<linkflags>"-Wl,+as,mpas"
+         <host-os>linux,<toolset>clang:<linkflags>"-latomic"
+         <host-os>linux,<toolset>intel:<linkflags>"-latomic"
+         <target-os>cygwin:<cxxflags>"-D_XOPEN_SOURCE=600"
+         <threading>multi
+         <link>static
+         <define>BOOST_TEST_NO_OLD_TOOLS
       ] ;
    }
 
