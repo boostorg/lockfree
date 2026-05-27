@@ -37,6 +37,7 @@ rule test_all
         <threading>multi
         <link>static
         <define>BOOST_TEST_NO_OLD_TOOLS
+        <target-os>cygwin:<cxxflags>"-D_XOPEN_SOURCE=600"
       ] ;
    }
 
