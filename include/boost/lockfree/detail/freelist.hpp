@@ -60,7 +60,15 @@ class alignas( cacheline_bytes ) freelist_stack : select_allocator_t< Alloc >
 
     struct BOOST_MAY_ALIAS freelist_node
     {
-        alignas( T ) tagged_ptr< freelist_node > next;
+#if __cplusplus >= 201703L
+        static constexpr std::size_t freelist_node_alignment = alignof( T );
+#else
+        static constexpr std::size_t freelist_node_alignment = alignof( std::max_align_t );
+#endif
+        static constexpr auto tagged_ptr_alignment = alignof( tagged_ptr< freelist_node > );
+        static constexpr auto member_alignment     = std::max( freelist_node_alignment, tagged_ptr_alignment );
+
+        alignas( member_alignment ) tagged_ptr< freelist_node > next;
     };
 
     typedef tagged_ptr< freelist_node > tagged_node_ptr;
