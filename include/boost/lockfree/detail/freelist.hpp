@@ -17,7 +17,9 @@
 #include <stdexcept>
 
 #include <boost/align/align_up.hpp>
-#include <boost/align/aligned_allocator_adaptor.hpp>
+#if __cplusplus < 201703L
+#    include <boost/align/aligned_allocator_adaptor.hpp>
+#endif
 #include <boost/config.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/throw_exception.hpp>
@@ -36,10 +38,25 @@ namespace boost { namespace lockfree { namespace detail {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-template < typename T, typename Alloc = std::allocator< T > >
-class alignas( cacheline_bytes ) freelist_stack : boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes >
+template < typename Alloc, std::size_t Align = cacheline_bytes >
+struct select_allocator
 {
-    typedef boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes > allocator_type;
+#if __cplusplus >= 201703L
+    typedef Alloc type;
+#else
+    typedef boost::alignment::aligned_allocator_adaptor< Alloc, Align > type;
+#endif
+};
+
+template < typename Alloc, std::size_t Align = cacheline_bytes >
+using select_allocator_t = typename select_allocator< Alloc, Align >::type;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template < typename T, typename Alloc = std::allocator< T > >
+class alignas( cacheline_bytes ) freelist_stack : select_allocator_t< Alloc >
+{
+    typedef select_allocator_t< Alloc > allocator_type;
 
     struct BOOST_MAY_ALIAS freelist_node
     {
@@ -191,7 +208,7 @@ private:
         for ( ;; ) {
             if ( !old_pool.get_ptr() ) {
                 if ( !Bounded ) {
-                    T* ptr = Alloc::allocate( 1 );
+                    T* ptr = allocator_type::allocate( 1 );
                     std::memset( (void*)ptr, 0, sizeof( T ) );
                     return ptr;
                 } else
@@ -368,11 +385,11 @@ struct alignas( cacheline_bytes ) compiletime_sized_freelist_storage
 //----------------------------------------------------------------------------------------------------------------------
 
 template < typename T, typename Alloc = std::allocator< T > >
-struct runtime_sized_freelist_storage : boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes >
+struct runtime_sized_freelist_storage : select_allocator_t< Alloc >
 {
-    typedef boost::alignment::aligned_allocator_adaptor< Alloc, cacheline_bytes > allocator_type;
-    T*                                                                            nodes_;
-    std::size_t                                                                   node_count_;
+    typedef select_allocator_t< Alloc > allocator_type;
+    T*                                  nodes_;
+    std::size_t                         node_count_;
 
     template < typename Allocator >
     runtime_sized_freelist_storage( Allocator const& alloc, std::size_t count ) :
