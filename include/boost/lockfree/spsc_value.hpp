@@ -250,7 +250,7 @@ private:
                 m_write_index.index(),
                 true,
             },
-            std::memory_order_release );
+            std::memory_order_acq_rel );
         m_write_index.set_tag_and_index( old_avail_index.index(), false );
     }
 
@@ -268,7 +268,7 @@ private:
 
             if ( m_available_index.compare_exchange_strong( current_avail_index_with_tag,
                                                             new_avail_index,
-                                                            std::memory_order_acquire ) ) {
+                                                            std::memory_order_acq_rel ) ) {
                 m_read_index = tagged_index( current_avail_index_with_tag.index(), false );
                 return true;
             } else
@@ -280,7 +280,7 @@ private:
             if ( !current_avail_index.is_consumable() )
                 return false;
 
-            current_avail_index = m_available_index.exchange( new_avail_index, std::memory_order_acquire );
+            current_avail_index = m_available_index.exchange( new_avail_index, std::memory_order_acq_rel );
             m_read_index        = tagged_index {
                 current_avail_index.index(),
                 false,
