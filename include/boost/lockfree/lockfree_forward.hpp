@@ -33,6 +33,14 @@ struct capacity;
 template < class Alloc >
 struct allocator;
 
+namespace reclamation_scheme {
+struct freelist;
+struct hazard_pointers;
+} // namespace reclamation_scheme
+
+template < class Scheme >
+struct reclamation;
+
 
 // data structures
 

@@ -25,10 +25,13 @@
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/copy_payload.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
+#include <boost/lockfree/detail/hazard_pointer_pool.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
+
+#include <type_traits>
 
 
 #if defined( _MSC_VER )
@@ -49,7 +52,9 @@ namespace boost { namespace lockfree {
 #ifndef BOOST_DOXYGEN_INVOKED
 namespace detail {
 
-typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boost::parameter::optional< tag::capacity > >
+typedef parameter::parameters< boost::parameter::optional< tag::allocator >,
+                               boost::parameter::optional< tag::capacity >,
+                               boost::parameter::optional< tag::reclamation > >
     queue_signature;
 
 } /* namespace detail */
@@ -74,6 +79,15 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *
  *  - \ref boost::lockfree::allocator, defaults to \c boost::lockfree::allocator<std::allocator<void>> \n
  *    Specifies the allocator that is used for the internal freelist
+ *
+ *  - \ref boost::lockfree::reclamation, defaults to \c
+ *    boost::lockfree::reclamation<boost::lockfree::reclamation_scheme::freelist> \n
+ *    Selects the memory-reclamation scheme. With \c reclamation_scheme::freelist (the default), freed nodes are
+ *    pushed to an internal freelist and not returned to the OS before the queue is destroyed. With \c
+ *    reclamation_scheme::hazard_pointers, nodes are allocated directly from the allocator and retired nodes are
+ *    returned to it once no thread accesses them anymore; \c reserve() becomes a no-op and \c bounded_push()
+ *    behaves like \c push(). Hazard-pointer reclamation cannot be combined with \c fixed_sized<true> or \c
+ *    capacity<>.
  *
  *  \b Requirements:
  *   - T must have a copy constructor
@@ -103,11 +117,20 @@ private:
     static constexpr bool fixed_sized        = detail::extract_fixed_sized< bound_args >::value;
     static constexpr bool node_based         = !( has_capacity || fixed_sized );
     static constexpr bool compile_time_sized = has_capacity;
+    static constexpr bool use_hazard_pointers
+        = std::is_same< typename detail::extract_reclamation_t< bound_args >, reclamation_scheme::hazard_pointers >::value;
+
+    // hazard-pointer reclamation allocates directly from the allocator, so it
+    // cannot be combined with index-based (fixed-sized) storage
+    static_assert( !use_hazard_pointers || ( !has_capacity && !fixed_sized ),
+                   "boost.lockfree::queue: hazard-pointer reclamation cannot be combined with "
+                   "capacity<> or fixed_sized<true>" );
 
     struct BOOST_MAY_ALIAS node
     {
-        typedef typename detail::select_tagged_handle< node, node_based >::tagged_handle_type tagged_node_handle;
-        typedef typename detail::select_tagged_handle< node, node_based >::handle_type        handle_type;
+        typedef typename detail::select_tagged_handle< node, node_based, use_hazard_pointers >::tagged_handle_type
+            tagged_node_handle;
+        typedef typename detail::select_tagged_handle< node, node_based, use_hazard_pointers >::handle_type handle_type;
 
         template < typename TagT >
         node( T const& v, handle_type null_handle, TagT next_tag ) :
@@ -126,10 +149,14 @@ private:
         T data;
     };
 
-    typedef detail::extract_allocator_t< bound_args, node >                                              node_allocator;
-    typedef detail::select_freelist_t< node, node_allocator, compile_time_sized, fixed_sized, capacity > pool_t;
-    typedef typename pool_t::tagged_node_handle                                    tagged_node_handle;
-    typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_type;
+    typedef detail::extract_allocator_t< bound_args, node > node_allocator;
+    typedef typename std::conditional<
+        use_hazard_pointers,
+        detail::hazard_pointer_pool< node, node_allocator, 2 >,
+        typename detail::select_freelist< node, node_allocator, compile_time_sized, fixed_sized, capacity >::type >::type
+                                                pool_t;
+    typedef typename pool_t::tagged_node_handle tagged_node_handle;
+    typedef typename detail::select_tagged_handle< node, node_based, use_hazard_pointers >::handle_type handle_type;
 
     void initialize( void )
     {
@@ -372,8 +399,10 @@ private:
 
         handle_type node_handle = pool.get_handle( n );
 
+        typename pool_t::guard g = pool.acquire();
+
         for ( ;; ) {
-            tagged_node_handle tail      = tail_.load( memory_order_acquire );
+            tagged_node_handle tail      = pool.template protect< 0 >( g, tail_ );
             node*              tail_node = pool.get_pointer( tail );
             tagged_node_handle next      = tail_node->next.load( memory_order_acquire );
             node*              next_ptr  = pool.get_pointer( next );
@@ -475,8 +504,10 @@ public:
 #endif
     bool pop( U& ret )
     {
+        typename pool_t::guard g = pool.acquire();
+
         for ( ;; ) {
-            tagged_node_handle head     = head_.load( memory_order_acquire );
+            tagged_node_handle head     = pool.template protect< 0 >( g, head_ );
             node*              head_ptr = pool.get_pointer( head );
 
             tagged_node_handle tail     = tail_.load( memory_order_acquire );
@@ -500,9 +531,17 @@ public:
                          * allocation. we can observe a null-pointer here.
                          * */
                         continue;
-                    detail::copy_payload( next_ptr->data, ret );
+                    // with hazard-pointer reclamation the successor must be
+                    // protected before its payload is read; the head is
+                    // re-validated afterwards to close the publish/reclaim race.
+                    // with freelist reclamation both are plain loads.
+                    tagged_node_handle safe_next = pool.template protect< 1 >( g, head_ptr->next );
+                    tagged_node_handle head3     = head_.load( memory_order_acquire );
+                    if ( safe_next != next || head != head3 )
+                        continue;
+                    detail::copy_payload( pool.get_pointer( safe_next )->data, ret );
 
-                    tagged_node_handle new_head( pool.get_handle( next ), head.get_next_tag() );
+                    tagged_node_handle new_head( pool.get_handle( safe_next ), head.get_next_tag() );
                     if ( head_.compare_exchange_weak( head, new_head ) ) {
                         pool.template destruct< true >( head );
                         return true;

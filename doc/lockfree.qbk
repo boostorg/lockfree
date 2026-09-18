@@ -244,10 +244,29 @@ consumed 10000000 objects.
 
 The lock-free [classref boost::lockfree::queue] and [classref boost::lockfree::stack] classes are node-based data structures,
 based on a linked list. Memory management of lock-free data structures is a non-trivial problem, because we need to avoid that
-one thread frees an internal node, while another thread still uses it. _lockfree_ uses a simple approach not returning any memory
+one thread frees an internal node, while another thread still uses it. By default, _lockfree_ uses a simple approach not returning any memory
 to the operating system. Instead they maintain a *free-list* in order to reuse them later. This is done for two reasons:
 first, depending on the implementation of the memory allocator freeing the memory may block (so the implementation would not
 be lock-free anymore), and second, most memory reclamation algorithms are patented.
+
+Alternatively, [classref boost::lockfree::queue] and [classref boost::lockfree::stack] can be configured to use
+*hazard pointers* for memory reclamation by passing
+`boost::lockfree::reclamation<boost::lockfree::reclamation_scheme::hazard_pointers>` as template argument.
+With hazard-pointer reclamation nodes are allocated directly from the allocator and retired nodes are returned to it
+once no thread holds a hazard pointer to them, so memory usage stays bounded instead of growing with the high-water
+mark of the container size. The trade-offs compared to the freelist are:
+
+* `reserve()` and `reserve_unsafe()` become no-ops and `bounded_push()` behaves like `push()`, because nodes are
+  always allocated from the allocator.
+* Every `push`/`pop` may call into the memory allocator, so the lock-freedom of the container depends on the
+  lock-freedom of the allocator.
+* Hazard-pointer reclamation cannot be combined with `fixed_sized<true>` or `capacity<>`: those configurations use
+  index-based storage, while hazard pointers allocate nodes directly.
+* Hazard pointers require no double-width `compare_exchange`, so unlike the node-based freelist configuration they
+  also work on platforms without DCAS support.
+
+Micro-benchmarks (push/pop pairs) show hazard-pointer reclamation trailing the freelist single-threaded, where the
+per-operation allocator calls dominate, and reaching rough parity under contention.
 
 [endsect]
 
@@ -270,6 +289,9 @@ implementation of the =boost::lockfree::detail::tagged_ptr= class.
 For lock-free operations on 32bit platforms without double-width =compare_exchange=, we support a third approach: by using a
 fixed-sized array to store the internal nodes we can avoid the use of 32bit pointers, but instead 16bit indices into the array
 are sufficient. However this is only possible for fixed-sized data structures, that have an upper bound of internal nodes.
+
+When hazard-pointer reclamation is selected (see [section Memory Management]), there is no ABA window at all, so links are
+plain pointers and no version tag is needed.
 
 [endsect]
 
@@ -299,6 +321,7 @@ _lockfree_ requires a c++14 compliant compiler. Users of MSVC are strongly recom
 In Symposium on Principles of Distributed Computing, pages 267–275, 1996.
 # [@http://books.google.com/books?id=pFSwuqtJgxYC M. Herlihy & Nir Shavit. The Art of Multiprocessor Programming], Morgan Kaufmann Publishers, 2008
 # [@http://www.1024cores.net/home/lock-free-algorithms/queues/intrusive-mpsc-node-based-queue Multiple Producer Single Consumer Lock-Free Queue by Dmitry Vyukov], 2010
+# [@https://www.microsoft.com/en-us/research/wp-content/uploads/2004/01/tr-2004-103.pdf Hazard Pointers: Safe Memory Reclamation for Lock-Free Objects by Maged Michael], IEEE Transactions on Parallel and Distributed Systems, 2004
 
 [endsect]
 

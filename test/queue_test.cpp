@@ -388,3 +388,94 @@ BOOST_AUTO_TEST_CASE( queue_push_pop_many_capacity )
     }
     BOOST_TEST_REQUIRE( f.empty() );
 }
+
+// conformance exercise run for every reclamation scheme
+template < typename queue_type >
+void run_queue_conformance( void )
+{
+    // push/pop, FIFO order
+    {
+        queue_type f( 64 );
+        BOOST_TEST_REQUIRE( f.is_lock_free() );
+        for ( int i = 0; i < 100; ++i )
+            BOOST_TEST_REQUIRE( f.push( i ) );
+
+        for ( int i = 0; i < 100; ++i ) {
+            int out;
+            BOOST_TEST_REQUIRE( f.pop( out ) );
+            BOOST_TEST_REQUIRE( out == i );
+        }
+        BOOST_TEST_REQUIRE( f.empty() );
+    }
+
+    // unsynchronized operations
+    {
+        queue_type f( 64 );
+        BOOST_TEST_REQUIRE( f.unsynchronized_push( 1 ) );
+        BOOST_TEST_REQUIRE( f.unsynchronized_push( 2 ) );
+        int out;
+        BOOST_TEST_REQUIRE( f.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( out == 1 );
+        BOOST_TEST_REQUIRE( f.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( out == 2 );
+        BOOST_TEST_REQUIRE( !f.unsynchronized_pop( out ) );
+    }
+
+    // consume_one / consume_all
+    {
+        queue_type f( 64 );
+        for ( int i = 0; i < 10; ++i )
+            BOOST_TEST_REQUIRE( f.push( i ) );
+
+        int sum = 0;
+        BOOST_TEST_REQUIRE( f.consume_one( [ & ]( int v ) {
+            sum += v;
+        } ) );
+        BOOST_TEST_REQUIRE( sum == 0 );
+        BOOST_TEST_REQUIRE( f.consume_all( [ & ]( int v ) {
+            sum += v;
+        } ) == 9u );
+        BOOST_TEST_REQUIRE( sum == 45 );
+        BOOST_TEST_REQUIRE( f.empty() );
+    }
+
+    // bounded_push
+    {
+        queue_type f( 64 );
+        BOOST_TEST_REQUIRE( f.bounded_push( 42 ) );
+        int out;
+        BOOST_TEST_REQUIRE( f.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 42 );
+        BOOST_TEST_REQUIRE( f.empty() );
+    }
+
+    // converting pop
+    {
+        queue_type f( 64 );
+        BOOST_TEST_REQUIRE( f.push( 42 ) );
+        long out = 0;
+        BOOST_TEST_REQUIRE( f.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 42 );
+    }
+
+    // empty-queue operations
+    {
+        queue_type f( 64 );
+        int        out = 0xDEAD;
+        BOOST_TEST_REQUIRE( !f.pop( out ) );
+        BOOST_TEST_REQUIRE( !f.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( !f.consume_one( []( int ) {} ) );
+        BOOST_TEST_REQUIRE( f.consume_all( []( int ) {} ) == 0u );
+        BOOST_TEST_REQUIRE( f.empty() );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( queue_conformance_freelist )
+{
+    run_queue_conformance< queue< int > >();
+}
+
+BOOST_AUTO_TEST_CASE( queue_conformance_hazard_pointers )
+{
+    run_queue_conformance< queue< int, reclamation< reclamation_scheme::hazard_pointers > > >();
+}

@@ -23,6 +23,7 @@
 
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/freelist.hpp>
+#include <boost/lockfree/detail/hazard_pointer_pool.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
 #include <boost/lockfree/detail/uses_optional.hpp>
@@ -35,7 +36,9 @@
 namespace boost { namespace lockfree {
 namespace detail {
 
-typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boost::parameter::optional< tag::capacity > >
+typedef parameter::parameters< boost::parameter::optional< tag::allocator >,
+                               boost::parameter::optional< tag::capacity >,
+                               boost::parameter::optional< tag::reclamation > >
     stack_signature;
 
 } // namespace detail
@@ -60,6 +63,15 @@ typedef parameter::parameters< boost::parameter::optional< tag::allocator >, boo
  *  - \c boost::lockfree::allocator<>, defaults to \c boost::lockfree::allocator<std::allocator<void>> <br>
  *    Specifies the allocator that is used for the internal freelist
  *
+ *  - \c boost::lockfree::reclamation<>, defaults to \c
+ *    boost::lockfree::reclamation<boost::lockfree::reclamation_scheme::freelist> <br>
+ *    Selects the memory-reclamation scheme. With \c reclamation_scheme::freelist (the default), freed nodes are
+ *    pushed to an internal freelist and not returned to the OS before the stack is destroyed. With \c
+ *    reclamation_scheme::hazard_pointers, nodes are allocated directly from the allocator and retired nodes are
+ *    returned to it once no thread accesses them anymore; \c reserve() becomes a no-op and \c bounded_push()
+ *    behaves like \c push(). Hazard-pointer reclamation cannot be combined with \c fixed_sized<true> or \c
+ * capacity<>.
+ *
  *  \b Requirements:
  *  - T must have a copy constructor or a move constructor
  * */
@@ -80,6 +92,14 @@ private:
     static const bool   fixed_sized        = detail::extract_fixed_sized< bound_args >::value;
     static const bool   node_based         = !( has_capacity || fixed_sized );
     static const bool   compile_time_sized = has_capacity;
+    static const bool   use_hazard_pointers
+        = std::is_same< typename detail::extract_reclamation_t< bound_args >, reclamation_scheme::hazard_pointers >::value;
+
+    // hazard-pointer reclamation allocates directly from the allocator, so it
+    // cannot be combined with index-based (fixed-sized) storage
+    static_assert( !use_hazard_pointers || ( !has_capacity && !fixed_sized ),
+                   "boost.lockfree::stack: hazard-pointer reclamation cannot be combined with "
+                   "capacity<> or fixed_sized<true>" );
 
     struct BOOST_MAY_ALIAS node
     {
@@ -95,15 +115,18 @@ private:
 
         node() = delete;
 
-        typedef typename detail::select_tagged_handle< node, node_based >::handle_type handle_t;
+        typedef typename detail::select_tagged_handle< node, node_based, use_hazard_pointers >::handle_type handle_t;
 
         handle_t next;
         T        v;
     };
 
     typedef typename detail::extract_allocator< bound_args, node >::type node_allocator;
-    typedef
-        typename detail::select_freelist< node, node_allocator, compile_time_sized, fixed_sized, capacity >::type pool_t;
+    typedef typename std::conditional<
+        use_hazard_pointers,
+        detail::hazard_pointer_pool< node, node_allocator, 1 >,
+        typename detail::select_freelist< node, node_allocator, compile_time_sized, fixed_sized, capacity >::type >::type
+                                                pool_t;
     typedef typename pool_t::tagged_node_handle tagged_node_handle;
 
     // check compile-time capacity
@@ -693,7 +716,8 @@ public:
     template < typename Functor >
     bool consume_one( Functor&& f )
     {
-        tagged_node_handle old_tos = tos.load( detail::memory_order_acquire );
+        typename pool_t::guard g       = pool.acquire();
+        tagged_node_handle     old_tos = pool.template protect< 0 >( g, tos );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -702,11 +726,15 @@ public:
 
             tagged_node_handle new_tos( old_tos_pointer->next, old_tos.get_next_tag() );
 
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) ) {
+            tagged_node_handle expected = old_tos;
+            if ( tos.compare_exchange_weak( expected, new_tos ) ) {
                 f( std::move( old_tos_pointer->v ) );
                 pool.template destruct< true >( old_tos );
                 return true;
             }
+            // cas failure reloads the current head; with hazard-pointer
+            // reclamation it must be re-protected before dereferencing
+            old_tos = pool.template protect< 0 >( g, tos );
         }
     }
 
@@ -739,8 +767,9 @@ public:
     template < typename Functor >
     size_t consume_all_atomic( Functor&& f )
     {
-        size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_acquire );
+        size_t                 element_count = 0;
+        typename pool_t::guard g             = pool.acquire();
+        tagged_node_handle     old_tos       = pool.template protect< 0 >( g, tos );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -749,8 +778,10 @@ public:
 
             tagged_node_handle new_tos( pool.null_handle(), old_tos.get_next_tag() );
 
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) )
+            tagged_node_handle expected = old_tos;
+            if ( tos.compare_exchange_weak( expected, new_tos ) )
                 break;
+            old_tos = pool.template protect< 0 >( g, tos );
         }
 
         tagged_node_handle nodes_to_consume = old_tos;
@@ -786,8 +817,9 @@ public:
     template < typename Functor >
     size_t consume_all_atomic_reversed( Functor&& f )
     {
-        size_t             element_count = 0;
-        tagged_node_handle old_tos       = tos.load( detail::memory_order_acquire );
+        size_t                 element_count = 0;
+        typename pool_t::guard g             = pool.acquire();
+        tagged_node_handle     old_tos       = pool.template protect< 0 >( g, tos );
 
         for ( ;; ) {
             node* old_tos_pointer = pool.get_pointer( old_tos );
@@ -796,8 +828,10 @@ public:
 
             tagged_node_handle new_tos( pool.null_handle(), old_tos.get_next_tag() );
 
-            if ( tos.compare_exchange_weak( old_tos, new_tos ) )
+            tagged_node_handle expected = old_tos;
+            if ( tos.compare_exchange_weak( expected, new_tos ) )
                 break;
+            old_tos = pool.template protect< 0 >( g, tos );
         }
 
         tagged_node_handle nodes_to_consume = old_tos;

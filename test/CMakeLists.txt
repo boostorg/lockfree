@@ -22,6 +22,7 @@ endif()
 set(Tests
     destructor_test
     freelist_test
+    hazard_pointer_test
     bounded_ticket_queue_comprehensive_stress_test
     bounded_ticket_queue_stress_test
     bounded_ticket_queue_test
@@ -31,6 +32,7 @@ set(Tests
     queue_bounded_stress_test
     queue_comprehensive_stress_test
     queue_fixedsize_stress_test
+    queue_hp_stress_test
     queue_interprocess_test
     queue_test
     queue_unbounded_stress_test
@@ -39,6 +41,7 @@ set(Tests
     stack_bounded_stress_test
     stack_comprehensive_stress_test
     stack_fixedsize_stress_test
+    stack_hp_stress_test
     stack_interprocess_test
     stack_test
     stack_unbounded_stress_test

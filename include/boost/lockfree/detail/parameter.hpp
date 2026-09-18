@@ -93,6 +93,11 @@ using extract_single_consumer = extract_integral_arg_or_default_t< bound_args, t
 
 //----------------------------------------------------------------------------------------------------------------------
 
+template < typename bound_args >
+using extract_reclamation_t = extract_arg_or_default_t< bound_args, tag::reclamation, reclamation_scheme::freelist >;
+
+//----------------------------------------------------------------------------------------------------------------------
+
 }}} // namespace boost::lockfree::detail
 
 #endif /* BOOST_LOCKFREE_DETAIL_PARAMETER_HPP */

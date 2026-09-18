@@ -468,3 +468,123 @@ BOOST_AUTO_TEST_CASE( stack_bounded_push_span )
     BOOST_TEST_REQUIRE( out == 10 );
     BOOST_TEST_REQUIRE( stk.empty() );
 }
+
+// conformance exercise run for every reclamation scheme
+template < typename stack_type >
+void run_stack_conformance( void )
+{
+    // push/pop, LIFO order
+    {
+        stack_type stk( 128 );
+        BOOST_TEST_REQUIRE( stk.is_lock_free() );
+        for ( long i = 0; i < 100; ++i )
+            BOOST_TEST_REQUIRE( stk.push( i ) );
+
+        for ( long i = 99; i >= 0; --i ) {
+            long out;
+            BOOST_TEST_REQUIRE( stk.pop( out ) );
+            BOOST_TEST_REQUIRE( out == i );
+        }
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+
+    // unsynchronized operations
+    {
+        stack_type stk( 128 );
+        BOOST_TEST_REQUIRE( stk.unsynchronized_push( 1 ) );
+        BOOST_TEST_REQUIRE( stk.unsynchronized_push( 2 ) );
+        long out;
+        BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( out == 2 );
+        BOOST_TEST_REQUIRE( stk.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( out == 1 );
+        BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
+    }
+
+    // consume_one / consume_all
+    {
+        stack_type stk( 128 );
+        for ( long i = 0; i < 10; ++i )
+            BOOST_TEST_REQUIRE( stk.push( i ) );
+
+        long sum = 0;
+        BOOST_TEST_REQUIRE( stk.consume_one( [ & ]( long v ) {
+            sum += v;
+        } ) );
+        BOOST_TEST_REQUIRE( sum == 9 );
+        BOOST_TEST_REQUIRE( stk.consume_all( [ & ]( long v ) {
+            sum += v;
+        } ) == 9u );
+        BOOST_TEST_REQUIRE( sum == 45 );
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+
+    // consume_all_atomic and reversed variant
+    {
+        stack_type stk( 128 );
+        for ( long i = 0; i < 10; ++i )
+            BOOST_TEST_REQUIRE( stk.push( i ) );
+
+        std::vector< long > consumed;
+        BOOST_TEST_REQUIRE( stk.consume_all_atomic( [ & ]( long v ) {
+            consumed.push_back( v );
+        } ) == 10u );
+        BOOST_TEST_REQUIRE( ( consumed == std::vector< long >( { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 } ) ) );
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+
+    {
+        stack_type stk( 128 );
+        for ( long i = 0; i < 10; ++i )
+            BOOST_TEST_REQUIRE( stk.push( i ) );
+
+        std::vector< long > consumed;
+        BOOST_TEST_REQUIRE( stk.consume_all_atomic_reversed( [ & ]( long v ) {
+            consumed.push_back( v );
+        } ) == 10u );
+        BOOST_TEST_REQUIRE( ( consumed == std::vector< long >( { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } ) ) );
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+
+    // bounded_push and range push
+    {
+        stack_type stk( 128 );
+        BOOST_TEST_REQUIRE( stk.bounded_push( 42 ) );
+        long data[ 3 ] = { 10, 20, 30 };
+        BOOST_TEST_REQUIRE( stk.push( data, data + 3 ) == data + 3 );
+
+        long out;
+        BOOST_TEST_REQUIRE( stk.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 30 );
+        BOOST_TEST_REQUIRE( stk.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 20 );
+        BOOST_TEST_REQUIRE( stk.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 10 );
+        BOOST_TEST_REQUIRE( stk.pop( out ) );
+        BOOST_TEST_REQUIRE( out == 42 );
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+
+    // empty-container operations
+    {
+        stack_type stk( 128 );
+        long       out = 0xDEAD;
+        BOOST_TEST_REQUIRE( !stk.pop( out ) );
+        BOOST_TEST_REQUIRE( !stk.unsynchronized_pop( out ) );
+        BOOST_TEST_REQUIRE( !stk.consume_one( []( long ) {} ) );
+        BOOST_TEST_REQUIRE( stk.consume_all( []( long ) {} ) == 0u );
+        BOOST_TEST_REQUIRE( stk.empty() );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( stack_conformance_freelist )
+{
+    run_stack_conformance< boost::lockfree::stack< long > >();
+}
+
+BOOST_AUTO_TEST_CASE( stack_conformance_hazard_pointers )
+{
+    run_stack_conformance<
+        boost::lockfree::stack< long,
+                                boost::lockfree::reclamation< boost::lockfree::reclamation_scheme::hazard_pointers > > >();
+}

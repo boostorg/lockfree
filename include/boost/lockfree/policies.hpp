@@ -62,6 +62,24 @@ struct single_consumer :
     boost::parameter::template_keyword< tag::single_consumer, std::integral_constant< bool, IsSingleConsumer > >
 {};
 
+namespace reclamation_scheme {
+// tag types selecting the memory-reclamation scheme of queue and stack.
+// they are passed as values to the reclamation<> policy, so they must be
+// complete types.
+struct freelist
+{};
+struct hazard_pointers
+{};
+} // namespace reclamation_scheme
+
+namespace tag {
+struct reclamation;
+} // namespace tag
+
+template < class Scheme >
+struct reclamation : boost::parameter::template_keyword< tag::reclamation, Scheme >
+{};
+
 #else
 
 /** Configures a data structure as \b fixed-sized.
@@ -117,6 +135,21 @@ struct single_producer;
  * */
 template < bool IsSingleConsumer >
 struct single_consumer;
+
+/** Selects the memory-\b reclamation scheme of queue and stack.
+ *
+ *  Possible arguments are \c boost::lockfree::reclamation_scheme::freelist
+ *  (the default, nodes are recycled through an internal freelist and never
+ *  returned to the allocator before the container is destroyed) and
+ *  \c boost::lockfree::reclamation_scheme::hazard_pointers (nodes are
+ *  allocated directly from the allocator and returned to it once no thread
+ *  holds a hazard pointer to them).
+ *
+ *  Hazard-pointer reclamation cannot be combined with \c fixed_sized<true>
+ *  or \c capacity<>.
+ * */
+template < class Scheme >
+struct reclamation;
 
 #endif
 

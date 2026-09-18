@@ -27,6 +27,7 @@
 #include <boost/lockfree/detail/atomic.hpp>
 #include <boost/lockfree/detail/parameter.hpp>
 #include <boost/lockfree/detail/tagged_ptr.hpp>
+#include <boost/lockfree/detail/untagged_ptr.hpp>
 
 #if defined( _MSC_VER )
 #    pragma warning( push )
@@ -170,6 +171,24 @@ public:
     bool is_lock_free( void ) const
     {
         return pool_.is_lock_free();
+    }
+
+    // Hazard-protection interface: with freelist reclamation nodes are
+    // never freed, so no protection is needed. acquire() returns an empty
+    // guard and protect() is a plain load, mirroring the interface of
+    // hazard_pointer_pool so queue/stack stay scheme-agnostic.
+    struct guard
+    {};
+
+    guard acquire()
+    {
+        return guard();
+    }
+
+    template < std::size_t Idx, typename AtomicHandle >
+    auto protect( guard&, AtomicHandle const& src ) -> decltype( src.load() )
+    {
+        return src.load( memory_order_acquire );
     }
 
     T* get_handle( T* pointer ) const
@@ -540,6 +559,24 @@ public:
         return pool_.is_lock_free();
     }
 
+    // Hazard-protection interface: with freelist reclamation nodes are
+    // never freed, so no protection is needed. acquire() returns an empty
+    // guard and protect() is a plain load, mirroring the interface of
+    // hazard_pointer_pool so queue/stack stay scheme-agnostic.
+    struct guard
+    {};
+
+    guard acquire()
+    {
+        return guard();
+    }
+
+    template < std::size_t Idx, typename AtomicHandle >
+    auto protect( guard&, AtomicHandle const& src ) -> decltype( src.load() )
+    {
+        return src.load( memory_order_acquire );
+    }
+
     index_t null_handle( void ) const
     {
         return static_cast< index_t >( NodeStorage::node_count() );
@@ -756,11 +793,21 @@ public:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-template < typename T, bool IsNodeBased >
+template < typename T, bool IsNodeBased, bool UseHazardPointers = false >
 struct select_tagged_handle
 {
     typedef std::conditional_t< IsNodeBased, tagged_ptr< T >, tagged_index >      tagged_handle_type;
     typedef std::conditional_t< IsNodeBased, T*, typename tagged_index::index_t > handle_type;
+};
+
+// With hazard-pointer reclamation there is no ABA window, so links are
+// plain (untagged) pointers. Hazard-pointer mode is always node-based
+// (fixed_sized/capacity are rejected by static_assert).
+template < typename T >
+struct select_tagged_handle< T, true, true >
+{
+    typedef untagged_ptr< T > tagged_handle_type;
+    typedef T*                handle_type;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
