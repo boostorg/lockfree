@@ -94,8 +94,13 @@ private:
             if ( buffer_mask_ )
                 return ( arg + 1 ) & buffer_mask_;
             std::size_t ret = arg + 1;
-            while ( BOOST_UNLIKELY( ret >= buffer_capacity_ ) )
+            while ( BOOST_UNLIKELY( ret >= buffer_capacity_ ) ) {
                 ret -= buffer_capacity_;
+#if BOOST_COMP_GNUC || BOOST_COMP_CLANG
+                // Compiler barrier to prevent compilers from replacing the loop with a closed form
+                __asm__( "" : "+r"( ret ) );
+#endif
+            }
             return ret;
         }
 
@@ -134,8 +139,13 @@ private:
         std::size_t next_index( std::size_t arg ) const
         {
             std::size_t ret = arg + 1;
-            while ( BOOST_UNLIKELY( ret >= buffer_capacity_ ) )
+            while ( BOOST_UNLIKELY( ret >= buffer_capacity_ ) ) {
                 ret -= buffer_capacity_;
+#if BOOST_COMP_GNUC || BOOST_COMP_CLANG
+                // Compiler barrier to prevent compilers from replacing the loop with a closed form
+                __asm__( "" : "+r"( ret ) );
+#endif
+            }
             return ret;
         }
 
